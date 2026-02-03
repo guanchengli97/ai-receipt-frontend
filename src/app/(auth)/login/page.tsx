@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import styles from "../auth.module.css";
 
 const IconMail = () => (
@@ -78,6 +81,49 @@ const IconApple = () => (
 );
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
+    "idle"
+  );
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Login failed. Please try again.");
+      }
+
+      if (data?.token) {
+        const maxAge = 60 * 60 * 24 * 7;
+        const secure = window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `auth_token=${data.token}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+      }
+
+      setStatus("success");
+      setMessage("Logged in successfully. Redirecting...");
+      window.location.href = "/dashboard";
+    } catch (error) {
+      setStatus("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please try again."
+      );
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -103,10 +149,20 @@ export default function LoginPage() {
           Sign in to track and organize your receipts in seconds.
         </p>
 
-        <form className={`${styles.form} ${styles.stagger}`}>
+        <form
+          className={`${styles.form} ${styles.stagger}`}
+          onSubmit={handleSubmit}
+        >
           <label className={styles.inputRow}>
             <IconMail />
-            <input className={styles.input} type="email" placeholder="Email" />
+            <input
+              className={styles.input}
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
           </label>
 
           <label className={styles.inputRow}>
@@ -115,15 +171,32 @@ export default function LoginPage() {
               className={styles.input}
               type="password"
               placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
             />
             <Link className={styles.inlineLink} href="#">
               Forgot password?
             </Link>
           </label>
 
-          <button className={styles.primaryButton} type="button">
-            Log In
+          <button
+            className={styles.primaryButton}
+            type="submit"
+            disabled={status === "loading"}
+          >
+            {status === "loading" ? "Logging In..." : "Log In"}
           </button>
+
+          {status !== "idle" && message && (
+            <div
+              className={`${styles.status} ${
+                status === "success" ? styles.statusSuccess : styles.statusError
+              }`}
+            >
+              {message}
+            </div>
+          )}
         </form>
 
         <p className={styles.helper}>

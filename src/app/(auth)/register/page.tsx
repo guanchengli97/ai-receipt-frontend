@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import styles from "../auth.module.css";
 
 const IconUser = () => (
@@ -117,6 +120,61 @@ const IconApple = () => (
 );
 
 export default function RegisterPage() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agree, setAgree] = useState(true);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
+    "idle"
+  );
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage("");
+
+    if (!agree) {
+      setStatus("error");
+      setMessage("Please agree to the Terms & Privacy Policy.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setStatus("error");
+      setMessage("Passwords do not match.");
+      return;
+    }
+
+    setStatus("loading");
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fullName, email, password }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Sign up failed. Please try again.");
+      }
+
+      setStatus("success");
+      setMessage("Registration successful!");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1200);
+    } catch (error) {
+      setStatus("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Sign up failed. Please try again."
+      );
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -142,15 +200,32 @@ export default function RegisterPage() {
           Track and organize your receipts in seconds.
         </p>
 
-        <form className={`${styles.form} ${styles.stagger}`}>
+        <form
+          className={`${styles.form} ${styles.stagger}`}
+          onSubmit={handleSubmit}
+        >
           <label className={styles.inputRow}>
             <IconUser />
-            <input className={styles.input} type="text" placeholder="Full Name" />
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Full Name"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              required
+            />
           </label>
 
           <label className={styles.inputRow}>
             <IconMail />
-            <input className={styles.input} type="email" placeholder="Email" />
+            <input
+              className={styles.input}
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
           </label>
 
           <label className={styles.inputRow}>
@@ -159,6 +234,9 @@ export default function RegisterPage() {
               className={styles.input}
               type="password"
               placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
             />
             <button className={styles.inputAction} type="button" aria-label="Show password">
               <IconEye />
@@ -171,6 +249,9 @@ export default function RegisterPage() {
               className={styles.input}
               type="password"
               placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
             />
             <button className={styles.inputAction} type="button" aria-label="Show password">
               <IconEye />
@@ -178,16 +259,34 @@ export default function RegisterPage() {
           </label>
 
           <label className={styles.checkboxRow}>
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={(event) => setAgree(event.target.checked)}
+            />
             <span>
               I agree to the <Link href="#">Terms</Link> &amp;{" "}
               <Link href="#">Privacy Policy</Link>
             </span>
           </label>
 
-          <button className={styles.primaryButton} type="button">
-            Sign Up
+          <button
+            className={styles.primaryButton}
+            type="submit"
+            disabled={status === "loading"}
+          >
+            {status === "loading" ? "Signing Up..." : "Sign Up"}
           </button>
+
+          {status !== "idle" && message && (
+            <div
+              className={`${styles.status} ${
+                status === "success" ? styles.statusSuccess : styles.statusError
+              }`}
+            >
+              {message}
+            </div>
+          )}
         </form>
 
         <p className={styles.helper}>
