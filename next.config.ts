@@ -4,6 +4,10 @@ function normalizeOrigin(origin: string) {
   return origin.replace(/\/+$/, "");
 }
 
+function normalizeBackendOrigin(origin: string) {
+  return normalizeOrigin(origin).replace(/\/api$/, "");
+}
+
 const nextConfig: NextConfig = {
   async rewrites() {
     const defaultOrigin =
@@ -11,7 +15,7 @@ const nextConfig: NextConfig = {
         ? "https://aireceipt-backend.guanchengli.com"
         : "http://localhost:8080";
 
-    const backendOrigin = normalizeOrigin(
+    const backendOrigin = normalizeBackendOrigin(
       process.env.AIRECEIPT_BACKEND_ORIGIN ?? defaultOrigin
     );
 
