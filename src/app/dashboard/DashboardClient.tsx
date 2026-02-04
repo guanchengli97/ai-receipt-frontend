@@ -261,7 +261,7 @@ export default function DashboardClient() {
         throw new Error(message);
       }
 
-      setRecentReceipts(normalizeReceipts(payload).slice(0, 5));
+      setRecentReceipts(normalizeReceipts(payload).slice(0, 15));
     } catch (error) {
       setRecentReceipts([]);
       setRecentReceiptsError(
@@ -288,25 +288,33 @@ export default function DashboardClient() {
       setUploadState("uploading");
       setUploadMessage("Preparing direct upload...");
 
-      const presignResponse = await fetch("/api/s3-upload", {
+      const authToken = getAuthTokenFromCookie();
+      const presignResponse = await fetch("/api/images/upload-url", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type || "image/jpeg",
+          sizeBytes: file.size,
         }),
       });
       const presignPayload = await presignResponse.json().catch(() => null);
       const uploadPayloadObject = toObject(presignPayload);
+      const imageId = uploadPayloadObject?.imageId;
+      const objectKey = uploadPayloadObject?.objectKey;
       const uploadUrl = uploadPayloadObject?.uploadUrl;
-      const imageUrl = uploadPayloadObject?.url;
 
       if (
         !presignResponse.ok ||
+        (typeof imageId !== "number" && typeof imageId !== "string") ||
+        typeof objectKey !== "string" ||
+        !objectKey.trim() ||
         typeof uploadUrl !== "string" ||
-        !uploadUrl.trim() ||
-        typeof imageUrl !== "string" ||
-        !imageUrl.trim()
+        !uploadUrl.trim()
       ) {
         const message =
           typeof uploadPayloadObject?.message === "string"
@@ -332,7 +340,6 @@ export default function DashboardClient() {
       setUploadState("parsing");
       setUploadMessage("Image uploaded. Parsing receipt...");
 
-      const authToken = getAuthTokenFromCookie();
       const parseResponse = await fetch("/api/receipts/parse", {
         method: "POST",
         headers: {
@@ -340,7 +347,10 @@ export default function DashboardClient() {
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         credentials: "include",
-        body: JSON.stringify({ url: imageUrl }),
+        body: JSON.stringify({
+          imageId: typeof imageId === "number" ? imageId : imageId.trim(),
+          objectKey: objectKey.trim(),
+        }),
       });
       const parsePayload = await parseResponse.json().catch(() => null);
 
