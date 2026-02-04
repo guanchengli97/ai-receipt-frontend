@@ -21,7 +21,11 @@ cp .env.example .env.local
 - `AWS_S3_PUBLIC_BASE_URL` (optional; custom public/CDN base URL)
 - `AWS_S3_SIGNED_URL_EXPIRES` (optional, seconds, default `3600`)
 
-`/api/s3-upload` returns a signed read URL (`url`) so `/api/receipts/parse` can read private S3 objects.
+`/api/s3-upload` now returns:
+- `uploadUrl` (signed PUT URL for browser direct upload to S3)
+- `url` (signed GET URL sent to `/api/receipts/parse`)
+
+Because upload is direct from browser to S3, configure S3 CORS to allow `PUT` from your frontend domain(s).
 
 4) Start dev server:
 

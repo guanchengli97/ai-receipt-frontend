@@ -49,16 +49,26 @@ function readEnv(name: string) {
   return "";
 }
 
-function requiredEnv(name: string) {
-  const value = readEnv(name);
+function readFirstEnv(names: string[]) {
+  for (const name of names) {
+    const value = readEnv(name);
+    if (value) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function requiredEnv(...names: string[]) {
+  const value = readFirstEnv(names);
   if (!value) {
-    throw new Error(`Missing environment variable: ${name}`);
+    throw new Error(`Missing environment variable: ${names.join(" / ")}`);
   }
   return value;
 }
 
-function optionalEnv(name: string) {
-  return readEnv(name);
+function optionalEnv(...names: string[]) {
+  return readFirstEnv(names);
 }
 
 function extensionFromName(fileName: string) {
@@ -66,56 +76,56 @@ function extensionFromName(fileName: string) {
   return match ? match[1] : "jpg";
 }
 
-function buildPublicUrl(bucket: string, region: string, key: string) {
-  const customBase = process.env.AWS_S3_PUBLIC_BASE_URL?.replace(/\/+$/, "");
-  if (customBase) {
-    return `${customBase}/${key}`;
+function createS3Client(region: string) {
+  const accessKeyId = optionalEnv("AWS_ACCESS_KEY_ID", "S3_ACCESS_KEY_ID");
+  const secretAccessKey = optionalEnv("AWS_SECRET_ACCESS_KEY", "S3_SECRET_ACCESS_KEY");
+
+  if (accessKeyId && secretAccessKey) {
+    return new S3Client({
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
   }
-  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+
+  return new S3Client({ region });
 }
 
 export async function POST(request: Request) {
   try {
-    const region = requiredEnv("AWS_REGION");
-    const bucket = requiredEnv("AWS_S3_BUCKET");
-    const accessKeyId = optionalEnv("AWS_ACCESS_KEY_ID");
-    const secretAccessKey = optionalEnv("AWS_SECRET_ACCESS_KEY");
-    const signedUrlExpiresSeconds = Number(process.env.AWS_S3_SIGNED_URL_EXPIRES ?? "3600");
+    const region = requiredEnv("AWS_REGION", "S3_REGION");
+    const bucket = requiredEnv("AWS_S3_BUCKET", "S3_BUCKET");
+    const signedUrlExpiresSeconds = Number(
+      optionalEnv("AWS_S3_SIGNED_URL_EXPIRES", "S3_SIGNED_URL_EXPIRES") || "3600"
+    );
+    const body = await request.json().catch(() => null);
+    const payload = typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {};
+    const fileName = typeof payload.fileName === "string" ? payload.fileName : "";
+    const contentType = typeof payload.contentType === "string" ? payload.contentType : "";
 
-    const formData = await request.formData();
-    const file = formData.get("file");
-
-    if (!(file instanceof File)) {
-      return NextResponse.json({ message: "No file uploaded." }, { status: 400 });
+    if (!fileName.trim()) {
+      return NextResponse.json({ message: "fileName is required." }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!contentType.startsWith("image/")) {
       return NextResponse.json({ message: "Only image files are supported." }, { status: 400 });
     }
 
-    const extension = extensionFromName(file.name);
+    const extension = extensionFromName(fileName);
     const key = `receipts/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const client = createS3Client(region);
+    const expiresIn = Number.isFinite(signedUrlExpiresSeconds) ? signedUrlExpiresSeconds : 3600;
 
-    const client = new S3Client(
-      accessKeyId && secretAccessKey
-        ? {
-            region,
-            credentials: {
-              accessKeyId,
-              secretAccessKey,
-            },
-          }
-        : { region }
-    );
-
-    await client.send(
+    const uploadUrl = await getSignedUrl(
+      client,
       new PutObjectCommand({
         Bucket: bucket,
         Key: key,
-        Body: fileBuffer,
-        ContentType: file.type || "application/octet-stream",
-      })
+        ContentType: contentType,
+      }),
+      { expiresIn }
     );
 
     const signedReadUrl = await getSignedUrl(
@@ -124,18 +134,18 @@ export async function POST(request: Request) {
         Bucket: bucket,
         Key: key,
       }),
-      { expiresIn: Number.isFinite(signedUrlExpiresSeconds) ? signedUrlExpiresSeconds : 3600 }
+      { expiresIn }
     );
 
     return NextResponse.json({
+      uploadUrl,
       url: signedReadUrl,
-      objectUrl: buildPublicUrl(bucket, region, key),
       key,
     });
   } catch (error) {
     return NextResponse.json(
       {
-        message: error instanceof Error ? error.message : "Upload failed.",
+        message: error instanceof Error ? error.message : "Failed to create upload URL.",
       },
       { status: 500 }
     );

@@ -286,24 +286,47 @@ export default function DashboardClient() {
 
     try {
       setUploadState("uploading");
+      setUploadMessage("Preparing direct upload...");
+
+      const presignResponse = await fetch("/api/s3-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || "image/jpeg",
+        }),
+      });
+      const presignPayload = await presignResponse.json().catch(() => null);
+      const uploadPayloadObject = toObject(presignPayload);
+      const uploadUrl = uploadPayloadObject?.uploadUrl;
+      const imageUrl = uploadPayloadObject?.url;
+
+      if (
+        !presignResponse.ok ||
+        typeof uploadUrl !== "string" ||
+        !uploadUrl.trim() ||
+        typeof imageUrl !== "string" ||
+        !imageUrl.trim()
+      ) {
+        const message =
+          typeof uploadPayloadObject?.message === "string"
+            ? String(uploadPayloadObject.message)
+            : "Failed to create upload URL.";
+        throw new Error(message);
+      }
+
       setUploadMessage("Uploading receipt image...");
 
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const uploadResponse = await fetch("/api/s3-upload", {
-        method: "POST",
-        body: formData,
+      const directUploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "image/jpeg",
+        },
+        body: file,
       });
-      const uploadPayload = await uploadResponse.json().catch(() => null);
-      const imageUrl = toObject(uploadPayload)?.url;
 
-      if (!uploadResponse.ok || typeof imageUrl !== "string" || !imageUrl.trim()) {
-        const message =
-          typeof toObject(uploadPayload)?.message === "string"
-            ? String(toObject(uploadPayload)?.message)
-            : "Failed to upload receipt image.";
-        throw new Error(message);
+      if (!directUploadResponse.ok) {
+        throw new Error("Failed to upload image to storage.");
       }
 
       setUploadState("parsing");
