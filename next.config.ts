@@ -1,11 +1,24 @@
 import type { NextConfig } from "next";
 
+function normalizeOrigin(origin: string) {
+  return origin.replace(/\/+$/, "");
+}
+
 const nextConfig: NextConfig = {
   async rewrites() {
+    const defaultOrigin =
+      process.env.NODE_ENV === "production"
+        ? "https://aireceipt-backend.guanchengli.com"
+        : "http://localhost:8080";
+
+    const backendOrigin = normalizeOrigin(
+      process.env.AIRECEIPT_BACKEND_ORIGIN ?? defaultOrigin
+    );
+
     return [
       {
         source: "/api/:path*",
-        destination: "https://aireceipt-backend.guanchengli.com/api/:path*",
+        destination: `${backendOrigin}/api/:path*`,
       },
     ];
   },
