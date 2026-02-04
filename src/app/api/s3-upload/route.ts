@@ -4,8 +4,38 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-function requiredEnv(name: string) {
+function readAmplifySecrets() {
+  const raw = process.env.secrets;
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null
+      ? (parsed as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function readEnv(name: string) {
   const value = process.env[name];
+  if (value && value.trim()) {
+    return value.trim();
+  }
+
+  const secretValue = readAmplifySecrets()[name];
+  if (typeof secretValue === "string" && secretValue.trim()) {
+    return secretValue.trim();
+  }
+
+  return "";
+}
+
+function requiredEnv(name: string) {
+  const value = readEnv(name);
   if (!value) {
     throw new Error(`Missing environment variable: ${name}`);
   }
@@ -13,8 +43,7 @@ function requiredEnv(name: string) {
 }
 
 function optionalEnv(name: string) {
-  const value = process.env[name];
-  return value && value.trim() ? value.trim() : "";
+  return readEnv(name);
 }
 
 function extensionFromName(fileName: string) {
