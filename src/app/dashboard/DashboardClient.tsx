@@ -276,6 +276,21 @@ export default function DashboardClient() {
     void fetchRecentReceipts();
   }, [fetchRecentReceipts]);
 
+  useEffect(() => {
+    if (uploadState !== "success") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setUploadState("idle");
+      setUploadMessage("");
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [uploadState]);
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
