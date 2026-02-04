@@ -34,16 +34,26 @@ function readEnv(name: string) {
   return "";
 }
 
-function requiredEnv(name: string) {
-  const value = readEnv(name);
+function readFirstEnv(names: string[]) {
+  for (const name of names) {
+    const value = readEnv(name);
+    if (value) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function requiredEnv(...names: string[]) {
+  const value = readFirstEnv(names);
   if (!value) {
-    throw new Error(`Missing environment variable: ${name}`);
+    throw new Error(`Missing environment variable: ${names.join(" / ")}`);
   }
   return value;
 }
 
-function optionalEnv(name: string) {
-  return readEnv(name);
+function optionalEnv(...names: string[]) {
+  return readFirstEnv(names);
 }
 
 function extensionFromName(fileName: string) {
@@ -52,7 +62,7 @@ function extensionFromName(fileName: string) {
 }
 
 function buildPublicUrl(bucket: string, region: string, key: string) {
-  const customBase = process.env.AWS_S3_PUBLIC_BASE_URL?.replace(/\/+$/, "");
+  const customBase = optionalEnv("AWS_S3_PUBLIC_BASE_URL", "S3_PUBLIC_BASE_URL").replace(/\/+$/, "");
   if (customBase) {
     return `${customBase}/${key}`;
   }
@@ -61,11 +71,13 @@ function buildPublicUrl(bucket: string, region: string, key: string) {
 
 export async function POST(request: Request) {
   try {
-    const region = requiredEnv("AWS_REGION");
-    const bucket = requiredEnv("AWS_S3_BUCKET");
-    const accessKeyId = optionalEnv("AWS_ACCESS_KEY_ID");
-    const secretAccessKey = optionalEnv("AWS_SECRET_ACCESS_KEY");
-    const signedUrlExpiresSeconds = Number(process.env.AWS_S3_SIGNED_URL_EXPIRES ?? "3600");
+    const region = requiredEnv("AWS_REGION", "S3_REGION");
+    const bucket = requiredEnv("AWS_S3_BUCKET", "S3_BUCKET");
+    const accessKeyId = optionalEnv("AWS_ACCESS_KEY_ID", "S3_ACCESS_KEY_ID");
+    const secretAccessKey = optionalEnv("AWS_SECRET_ACCESS_KEY", "S3_SECRET_ACCESS_KEY");
+    const signedUrlExpiresSeconds = Number(
+      optionalEnv("AWS_S3_SIGNED_URL_EXPIRES", "S3_SIGNED_URL_EXPIRES") || "3600"
+    );
 
     const formData = await request.formData();
     const file = formData.get("file");
