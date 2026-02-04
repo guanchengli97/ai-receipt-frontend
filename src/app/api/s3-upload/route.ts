@@ -95,6 +95,17 @@ function createS3Client(region: string) {
 
 export async function POST(request: Request) {
   try {
+    const amplifySecrets = readAmplifySecrets();
+    console.info("[s3-upload][env-check]", {
+      nodeEnv: process.env.NODE_ENV ?? "",
+      hasAwsRegion: Boolean(readEnv("AWS_REGION")),
+      hasS3Region: Boolean(readEnv("S3_REGION")),
+      hasAwsS3Bucket: Boolean(readEnv("AWS_S3_BUCKET")),
+      hasS3Bucket: Boolean(readEnv("S3_BUCKET")),
+      hasSecretsBlob: Boolean(process.env.secrets),
+      secretKeys: Object.keys(amplifySecrets).slice(0, 30),
+    });
+
     const region = requiredEnv("AWS_REGION", "S3_REGION");
     const bucket = requiredEnv("AWS_S3_BUCKET", "S3_BUCKET");
     const signedUrlExpiresSeconds = Number(
