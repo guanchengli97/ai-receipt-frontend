@@ -22,7 +22,6 @@ cp .env.example .env.local
 - `AWS_S3_SIGNED_URL_EXPIRES` (optional, seconds, default `3600`)
 
 `/api/s3-upload` returns a signed read URL (`url`) so `/api/receipts/parse` can read private S3 objects.
-It also accepts aliases `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BASE_URL`, `S3_SIGNED_URL_EXPIRES`.
 
 4) Start dev server:
 
