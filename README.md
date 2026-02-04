@@ -31,3 +31,14 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+## Amplify deployment note
+
+If you deploy to Amplify SSR, set runtime variables in Amplify with non-`AWS_` names:
+
+- `S3_REGION`
+- `S3_BUCKET`
+- `S3_PUBLIC_BASE_URL` (optional)
+- `S3_SIGNED_URL_EXPIRES` (optional)
+
+This repo includes `amplify.yml` to write those values into `.env.production` during build so Next runtime can read them.

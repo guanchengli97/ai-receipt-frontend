@@ -16,7 +16,22 @@ function readAmplifySecrets() {
       ? (parsed as Record<string, string>)
       : {};
   } catch {
-    return {};
+    return raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .reduce<Record<string, string>>((accumulator, line) => {
+        const separatorIndex = line.indexOf("=");
+        if (separatorIndex <= 0) {
+          return accumulator;
+        }
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim();
+        if (key && value) {
+          accumulator[key] = value;
+        }
+        return accumulator;
+      }, {});
   }
 }
 
