@@ -130,7 +130,7 @@ export default function ProfilePage() {
             ←
           </Link>
           <h1 className={styles.title}>Profile</h1>
-          <span className={styles.action}>Save</span>
+          {/* <span className={styles.action}>Save</span> */}
         </header>
 
         <section className={styles.hero}>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                 <span className={styles.label}>Currency</span>
                 <span className={styles.value}>{profile.currency || "--"}</span>
               </div>
-              <div className={styles.listItem}>
+              {/* <div className={styles.listItem}>
                 <span className={styles.label}>Status</span>
                 <span className={styles.value}>
                   {profile.isActive === null ? "--" : profile.isActive ? "Active" : "Inactive"}
@@ -178,7 +178,7 @@ export default function ProfilePage() {
               <div className={styles.listItem}>
                 <span className={styles.label}>Updated</span>
                 <span className={styles.value}>{formatDate(profile.updatedAt)}</span>
-              </div>
+              </div> */}
             </section>
 
             <button className={styles.logout} type="button" onClick={handleLogout}>
