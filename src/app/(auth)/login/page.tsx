@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "../auth.module.css";
 
 const IconMail = () => (
@@ -87,6 +87,13 @@ export default function LoginPage() {
     "idle"
   );
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+    if (match && match[1]) {
+      window.location.replace("/dashboard");
+    }
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

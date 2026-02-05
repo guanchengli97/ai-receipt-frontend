@@ -186,6 +186,25 @@ export default function ReceiptDetailPage() {
     };
   }, [receiptId]);
 
+  const fetchPresignedUrl = async (imageId: number) => {
+    const authToken = getAuthTokenFromCookie();
+    const response = await fetch(`/api/images/${imageId}/presigned-url`, {
+      method: "GET",
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      credentials: "include",
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => null);
+    const payloadObject = toObject(payload);
+    const url = payloadObject && typeof payloadObject.url === "string" ? payloadObject.url : "";
+
+    if (!response.ok || !url) {
+      throw new Error("Failed to load attachment.");
+    }
+
+    return url;
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -211,20 +230,7 @@ export default function ReceiptDetailPage() {
 
       try {
         setAttachmentStatus("loading");
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch(`/api/images/${detail.imageId}/presigned-url`, {
-          method: "GET",
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-          credentials: "include",
-          cache: "no-store",
-        });
-        const payload = await response.json().catch(() => null);
-        const payloadObject = toObject(payload);
-        const url = payloadObject && typeof payloadObject.url === "string" ? payloadObject.url : "";
-
-        if (!response.ok || !url) {
-          throw new Error("Failed to load attachment.");
-        }
+        const url = await fetchPresignedUrl(detail.imageId);
 
         if (!isMounted) {
           return;
@@ -300,6 +306,29 @@ export default function ReceiptDetailPage() {
       setReviewMessage(
         error instanceof Error ? error.message : "Failed to update review status."
       );
+    }
+  };
+
+  const handleOpenPreview = async () => {
+    if (!detail) {
+      return;
+    }
+
+    if (!detail.imageId) {
+      setPreviewOpen(Boolean(attachmentUrl));
+      return;
+    }
+
+    try {
+      setAttachmentStatus("loading");
+      const url = await fetchPresignedUrl(detail.imageId);
+      setAttachmentUrl(url);
+      setImageFailed(false);
+      setAttachmentStatus("success");
+      setPreviewOpen(true);
+    } catch {
+      setAttachmentStatus("error");
+      setPreviewOpen(false);
     }
   };
 
@@ -403,7 +432,7 @@ export default function ReceiptDetailPage() {
                   <button
                     className={styles.thumbnailButton}
                     type="button"
-                    onClick={() => setPreviewOpen(true)}
+                    onClick={handleOpenPreview}
                     aria-label="Preview receipt image"
                   >
                     <div className={styles.thumbnail}>

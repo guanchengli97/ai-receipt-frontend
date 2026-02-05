@@ -475,7 +475,7 @@ export default function DashboardClient() {
             <span>Receipts</span>
           </div>
           <div className={styles.headerIcons}>
-            <button
+            {/* <button
               className={styles.logoutIcon}
               type="button"
               onClick={handleLogout}
@@ -486,7 +486,7 @@ export default function DashboardClient() {
             </button>
             <button className={styles.iconButton} type="button">
               <IconBell />
-            </button>
+            </button> */}
             <Link className={styles.avatar} href="/profile" aria-label="Open profile">
               AL
             </Link>
@@ -530,7 +530,7 @@ export default function DashboardClient() {
         <section>
           <div className={styles.recentHeader}>
             <span>Recent Documents</span>
-            <Link href="#">View All</Link>
+            {/* <Link href="#">View All</Link> */}
           </div>
           <div className={styles.list}>
             {recentRows.map((receipt) => {
