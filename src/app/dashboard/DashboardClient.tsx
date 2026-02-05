@@ -149,15 +149,12 @@ function readFirstNumber(source: Record<string, unknown>, keys: string[]): numbe
   return null;
 }
 
-function toDateIso(value: unknown): string | null {
-  if (typeof value !== "string" || !value.trim()) {
+function toDateString(value: unknown): string | null {
+  if (typeof value !== "string") {
     return null;
   }
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return null;
-  }
-  return new Date(parsed).toISOString();
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function normalizeReceipts(payload: unknown): Receipt[] {
@@ -194,7 +191,7 @@ function normalizeReceipts(payload: unknown): Receipt[] {
             ? "Reviewed"
             : "Unreview"
           : readFirstString(receiptObject, ["status", "processingStatus", "state"]) ?? "Unknown";
-      const date = toDateIso(
+      const date = toDateString(
         receiptObject.createdAt ??
           receiptObject.date ??
           receiptObject.receiptDate ??
@@ -226,10 +223,12 @@ function formatDate(date: string | null) {
   if (!date) {
     return "--";
   }
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(date));
+  const trimmed = date.trim();
+  if (!trimmed) {
+    return "--";
+  }
+  const dateOnly = trimmed.split("T")[0];
+  return dateOnly || trimmed;
 }
 
 function getAuthTokenFromCookie() {

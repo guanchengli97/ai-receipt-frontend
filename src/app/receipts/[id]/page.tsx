@@ -27,6 +27,24 @@ type ReceiptDetail = {
   items: ReceiptItem[];
 };
 
+type EditableItem = {
+  id: string;
+  description: string;
+  quantity: string;
+  unitPrice: string;
+  totalPrice: string;
+};
+
+type EditableReceipt = {
+  merchantName: string;
+  receiptDate: string;
+  currency: string;
+  subtotal: string;
+  tax: string;
+  total: string;
+  items: EditableItem[];
+};
+
 function toObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -71,15 +89,23 @@ function formatDate(value: string) {
   if (!value) {
     return "--";
   }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "--";
+  }
+  const dateOnly = trimmed.split("T")[0];
+  return dateOnly || trimmed;
+}
+
+function toDateInputValue(value: string) {
+  if (!value) {
+    return "";
+  }
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) {
     return value;
   }
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(parsed));
+  return new Date(parsed).toISOString().slice(0, 10);
 }
 
 function getAuthTokenFromCookie() {
@@ -90,10 +116,118 @@ function getAuthTokenFromCookie() {
   return match ? decodeURIComponent(match[1]) : "";
 }
 
+function buildReceiptDetail(payloadObject: Record<string, unknown>): ReceiptDetail {
+  const itemsRaw = Array.isArray(payloadObject.items) ? payloadObject.items : [];
+  const items = itemsRaw
+    .map((item) => {
+      const itemObject = toObject(item);
+      if (!itemObject) {
+        return null;
+      }
+      return {
+        description: toString(itemObject.description) || "Item",
+        quantity: toNumber(itemObject.quantity),
+        unitPrice: toNumber(itemObject.unitPrice),
+        totalPrice: toNumber(itemObject.totalPrice),
+      };
+    })
+    .filter((item): item is ReceiptItem => item !== null);
+
+  const imageObject = toObject(payloadObject.image);
+  const imageId = toNumber(
+    payloadObject.imageId ??
+      payloadObject.image_id ??
+      imageObject?.id ??
+      imageObject?.imageId
+  );
+
+  return {
+    receiptId: toNumber(payloadObject.receiptId),
+    merchantName: toString(payloadObject.merchantName) || "Unknown Merchant",
+    receiptDate: toString(payloadObject.receiptDate),
+    currency: toString(payloadObject.currency),
+    imageId,
+    imageUrl: toString(payloadObject.imageUrl),
+    reviewed: toBoolean(payloadObject.reviewed),
+    subtotal: toNumber(payloadObject.subtotal),
+    tax: toNumber(payloadObject.tax),
+    total: toNumber(payloadObject.total),
+    items,
+  };
+}
+
+function buildEditableReceipt(source: ReceiptDetail): EditableReceipt {
+  return {
+    merchantName: source.merchantName,
+    receiptDate: toDateInputValue(source.receiptDate),
+    currency: source.currency,
+    subtotal: source.subtotal === null ? "" : String(source.subtotal),
+    tax: source.tax === null ? "" : String(source.tax),
+    total: source.total === null ? "" : String(source.total),
+    items: source.items.map((item, index) => ({
+      id: `${item.description}-${index}-${Date.now()}`,
+      description: item.description,
+      quantity: item.quantity === null ? "" : String(item.quantity),
+      unitPrice: item.unitPrice === null ? "" : String(item.unitPrice),
+      totalPrice: item.totalPrice === null ? "" : String(item.totalPrice),
+    })),
+  };
+}
+
+function toComparableNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isReceiptEdited(detail: ReceiptDetail, editDetail: EditableReceipt) {
+  if (detail.merchantName !== editDetail.merchantName.trim()) {
+    return true;
+  }
+  if (toDateInputValue(detail.receiptDate) !== editDetail.receiptDate) {
+    return true;
+  }
+  if ((detail.currency || "") !== editDetail.currency.trim()) {
+    return true;
+  }
+  if (detail.subtotal !== toComparableNumber(editDetail.subtotal)) {
+    return true;
+  }
+  if (detail.tax !== toComparableNumber(editDetail.tax)) {
+    return true;
+  }
+  if (detail.total !== toComparableNumber(editDetail.total)) {
+    return true;
+  }
+  if (detail.items.length !== editDetail.items.length) {
+    return true;
+  }
+  for (let index = 0; index < detail.items.length; index += 1) {
+    const left = detail.items[index];
+    const right = editDetail.items[index];
+    if (!right) {
+      return true;
+    }
+    if (left.description !== right.description.trim()) {
+      return true;
+    }
+    if (left.quantity !== toComparableNumber(right.quantity)) {
+      return true;
+    }
+    if (left.unitPrice !== toComparableNumber(right.unitPrice)) {
+      return true;
+    }
+    if (left.totalPrice !== toComparableNumber(right.totalPrice)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export default function ReceiptDetailPage() {
   const params = useParams<{ id: string }>();
   const receiptId = params?.id;
   const [detail, setDetail] = useState<ReceiptDetail | null>(null);
+  const [editDetail, setEditDetail] = useState<EditableReceipt | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
   const [imageFailed, setImageFailed] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -103,6 +237,8 @@ export default function ReceiptDetailPage() {
   >("idle");
   const [reviewStatus, setReviewStatus] = useState<"idle" | "saving" | "error">("idle");
   const [reviewMessage, setReviewMessage] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -130,47 +266,15 @@ export default function ReceiptDetailPage() {
           return;
         }
 
-        const itemsRaw = Array.isArray(payloadObject.items) ? payloadObject.items : [];
-        const items = itemsRaw
-          .map((item) => {
-            const itemObject = toObject(item);
-            if (!itemObject) {
-              return null;
-            }
-            return {
-              description: toString(itemObject.description) || "Item",
-              quantity: toNumber(itemObject.quantity),
-              unitPrice: toNumber(itemObject.unitPrice),
-              totalPrice: toNumber(itemObject.totalPrice),
-            };
-          })
-          .filter((item): item is ReceiptItem => item !== null);
-
-        const imageObject = toObject(payloadObject.image);
-        const imageId = toNumber(
-          payloadObject.imageId ??
-            payloadObject.image_id ??
-            imageObject?.id ??
-            imageObject?.imageId
-        );
-
-        setDetail({
-          receiptId: toNumber(payloadObject.receiptId),
-          merchantName: toString(payloadObject.merchantName) || "Unknown Merchant",
-          receiptDate: toString(payloadObject.receiptDate),
-          currency: toString(payloadObject.currency),
-          imageId,
-          imageUrl: toString(payloadObject.imageUrl),
-          reviewed: toBoolean(payloadObject.reviewed),
-          subtotal: toNumber(payloadObject.subtotal),
-          tax: toNumber(payloadObject.tax),
-          total: toNumber(payloadObject.total),
-          items,
-        });
+        const nextDetail = buildReceiptDetail(payloadObject);
+        setDetail(nextDetail);
+        setEditDetail(buildEditableReceipt(nextDetail));
         setImageFailed(false);
         setStatus("success");
         setReviewStatus("idle");
         setReviewMessage("");
+        setSaveStatus("idle");
+        setSaveMessage("");
       } catch {
         if (!isMounted) {
           return;
@@ -309,6 +413,121 @@ export default function ReceiptDetailPage() {
     }
   };
 
+  const handleSaveReceipt = async () => {
+    if (!detail?.receiptId || !editDetail || saveStatus === "saving") {
+      return;
+    }
+
+    if (!isReceiptEdited(detail, editDetail)) {
+      setSaveStatus("idle");
+      setSaveMessage("No changes to save.");
+      return;
+    }
+
+    try {
+      setSaveStatus("saving");
+      setSaveMessage("");
+
+      const payload = {
+        merchantName: editDetail.merchantName.trim(),
+        receiptDate: editDetail.receiptDate,
+        currency: editDetail.currency.trim(),
+        subtotal: toNumber(editDetail.subtotal),
+        tax: toNumber(editDetail.tax),
+        total: toNumber(editDetail.total),
+        items: editDetail.items.map((item) => ({
+          description: item.description.trim() || "Item",
+          quantity: toNumber(item.quantity),
+          unitPrice: toNumber(item.unitPrice),
+          totalPrice: toNumber(item.totalPrice),
+        })),
+      };
+
+      const authToken = getAuthTokenFromCookie();
+      const response = await fetch(`/api/receipts/${detail.receiptId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => null);
+      const dataObject = toObject(data);
+
+      if (!response.ok) {
+        const message =
+          typeof dataObject?.error === "string"
+            ? dataObject.error
+            : typeof dataObject?.message === "string"
+              ? dataObject.message
+              : "Failed to update receipt.";
+        throw new Error(message);
+      }
+
+      if (!dataObject) {
+        throw new Error("Failed to update receipt.");
+      }
+
+      const nextDetail = buildReceiptDetail(dataObject);
+      setDetail(nextDetail);
+      setEditDetail(buildEditableReceipt(nextDetail));
+      setSaveStatus("success");
+      setSaveMessage("Receipt updated.");
+    } catch (error) {
+      setSaveStatus("error");
+      setSaveMessage(error instanceof Error ? error.message : "Failed to update receipt.");
+    }
+  };
+
+  const handleItemChange = (
+    index: number,
+    field: keyof EditableItem,
+    value: string
+  ) => {
+    setEditDetail((current) => {
+      if (!current) {
+        return current;
+      }
+      const nextItems = [...current.items];
+      nextItems[index] = { ...nextItems[index], [field]: value };
+      return { ...current, items: nextItems };
+    });
+  };
+
+  const handleItemAdd = () => {
+    setEditDetail((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        items: [
+          ...current.items,
+          {
+            id: `item-${Date.now()}`,
+            description: "",
+            quantity: "",
+            unitPrice: "",
+            totalPrice: "",
+          },
+        ],
+      };
+    });
+  };
+
+  const handleItemRemove = (index: number) => {
+    setEditDetail((current) => {
+      if (!current) {
+        return current;
+      }
+      const nextItems = current.items.filter((_, itemIndex) => itemIndex !== index);
+      return { ...current, items: nextItems };
+    });
+  };
+
   const handleOpenPreview = async () => {
     if (!detail) {
       return;
@@ -373,15 +592,88 @@ export default function ReceiptDetailPage() {
               <h3>Receipt Details</h3>
               <div className={styles.detailRow}>
                 <span>Merchant</span>
-                <span>{detail.merchantName}</span>
+                <input
+                  className={styles.detailInput}
+                  type="text"
+                  value={editDetail?.merchantName ?? ""}
+                  onChange={(event) =>
+                    setEditDetail((current) =>
+                      current ? { ...current, merchantName: event.target.value } : current
+                    )
+                  }
+                />
               </div>
               <div className={styles.detailRow}>
                 <span>Receipt Date</span>
-                <span>{formatDate(detail.receiptDate)}</span>
+                <input
+                  className={styles.detailInput}
+                  type="date"
+                  value={editDetail?.receiptDate ?? ""}
+                  onChange={(event) =>
+                    setEditDetail((current) =>
+                      current ? { ...current, receiptDate: event.target.value } : current
+                    )
+                  }
+                />
               </div>
               <div className={styles.detailRow}>
                 <span>Currency</span>
-                <span>{detail.currency || "--"}</span>
+                <select
+                  className={styles.detailInput}
+                  value={editDetail?.currency ?? "USD"}
+                  onChange={(event) =>
+                    setEditDetail((current) =>
+                      current ? { ...current, currency: event.target.value } : current
+                    )
+                  }
+                >
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+              <div className={styles.detailRow}>
+                <span>Subtotal</span>
+                <input
+                  className={styles.detailInput}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={editDetail?.subtotal ?? ""}
+                  onChange={(event) =>
+                    setEditDetail((current) =>
+                      current ? { ...current, subtotal: event.target.value } : current
+                    )
+                  }
+                />
+              </div>
+              <div className={styles.detailRow}>
+                <span>Tax</span>
+                <input
+                  className={styles.detailInput}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={editDetail?.tax ?? ""}
+                  onChange={(event) =>
+                    setEditDetail((current) =>
+                      current ? { ...current, tax: event.target.value } : current
+                    )
+                  }
+                />
+              </div>
+              <div className={styles.detailRow}>
+                <span>Total</span>
+                <input
+                  className={styles.detailInput}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={editDetail?.total ?? ""}
+                  onChange={(event) =>
+                    setEditDetail((current) =>
+                      current ? { ...current, total: event.target.value } : current
+                    )
+                  }
+                />
               </div>
               <div className={styles.detailRow}>
                 <span>Status</span>
@@ -391,27 +683,96 @@ export default function ReceiptDetailPage() {
 
             <section className={styles.card}>
               <h3>Items</h3>
-              {detail.items.length === 0 && (
+              {editDetail && editDetail.items.length === 0 && (
                 <div className={styles.empty}>No items yet.</div>
               )}
-              {detail.items.map((item, index) => (
-                <div className={styles.itemRow} key={`${item.description}-${index}`}>
-                  <span>{item.description}</span>
-                  <span>
-                    {item.totalPrice !== null
-                      ? formatCurrency(item.totalPrice, detail.currency)
-                      : formatCurrency(
-                          (item.unitPrice ?? 0) * (item.quantity ?? 0),
-                          detail.currency
-                        )}
-                  </span>
+              {editDetail?.items.map((item, index) => (
+                <div className={styles.itemEditor} key={item.id}>
+                  <div className={styles.itemGrid}>
+                    <label className={styles.itemField}>
+                      <span>Description</span>
+                      <input
+                        className={styles.itemInput}
+                        type="text"
+                        placeholder="Description"
+                        value={item.description}
+                        onChange={(event) =>
+                          handleItemChange(index, "description", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className={styles.itemField}>
+                      <span>Qty</span>
+                      <input
+                        className={styles.itemInput}
+                        type="number"
+                        inputMode="decimal"
+                        step="1"
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onChange={(event) =>
+                          handleItemChange(index, "quantity", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className={styles.itemField}>
+                      <span>Unit</span>
+                      <input
+                        className={styles.itemInput}
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        placeholder="Unit"
+                        value={item.unitPrice}
+                        onChange={(event) =>
+                          handleItemChange(index, "unitPrice", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className={styles.itemField}>
+                      <span>Total</span>
+                      <input
+                        className={styles.itemInput}
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        placeholder="Total"
+                        value={item.totalPrice}
+                        onChange={(event) =>
+                          handleItemChange(index, "totalPrice", event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                  <button
+                    className={styles.itemRemove}
+                    type="button"
+                    onClick={() => handleItemRemove(index)}
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
-              <div className={styles.itemTotal}>
-                <span>Total</span>
-                <span>{totals.total}</span>
-              </div>
+              <button
+                className={styles.itemAdd}
+                type="button"
+                onClick={handleItemAdd}
+              >
+                Add Item
+              </button>
             </section>
+
+            <button
+              className={styles.saveButton}
+              type="button"
+              onClick={handleSaveReceipt}
+              disabled={saveStatus === "saving" || !editDetail}
+            >
+              {saveStatus === "saving" ? "Saving..." : "Save Changes"}
+            </button>
+            {saveMessage && (
+              <p className={styles.saveMessage}>{saveMessage}</p>
+            )}
 
             <button
               className={styles.reviewButton}

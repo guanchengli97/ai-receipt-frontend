@@ -128,6 +128,17 @@
   border-bottom: none;
 }
 
+.detailInput {
+  border: 1px solid #e4eaf6;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: #1d2944;
+  background: #f9fbff;
+  width: 160px;
+  text-align: right;
+}
+
 .itemRow {
   display: flex;
   justify-content: space-between;
@@ -143,6 +154,61 @@
   font-weight: 700;
   padding-top: 8px;
   color: #1d2944;
+}
+
+.itemEditor {
+  padding: 8px 0 10px;
+  border-bottom: 1px dashed #edf0f7;
+}
+
+.itemGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.itemField {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #6c7aa2;
+}
+
+.itemField span {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.itemInput {
+  border: 1px solid #e4eaf6;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #1d2944;
+  background: #f9fbff;
+}
+
+.itemRemove {
+  margin-top: 8px;
+  border: none;
+  background: #ffe8e8;
+  color: #c92a2a;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.itemAdd {
+  margin-top: 12px;
+  width: 100%;
+  border: 1px dashed #c7d2fe;
+  background: #f4f6ff;
+  color: #334155;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  cursor: pointer;
 }
 
 .empty {
@@ -268,7 +334,7 @@
 .reviewButton {
   width: 100%;
   border: none;
-  background: #5b86f1;
+  background: #1d4ed8;
   color: #ffffff;
   font-weight: 700;
   padding: 10px 14px;
@@ -282,6 +348,28 @@
 }
 
 .reviewMessage {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #6b7bb0;
+}
+
+.saveButton {
+  width: 100%;
+  border: none;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.saveButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.saveMessage {
   margin: 10px 0 0;
   font-size: 12px;
   color: #6b7bb0;
