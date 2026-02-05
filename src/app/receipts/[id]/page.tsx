@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -18,6 +18,7 @@ type ReceiptDetail = {
   merchantName: string;
   receiptDate: string;
   currency: string;
+  imageId: number | null;
   imageUrl: string;
   reviewed: boolean | null;
   subtotal: number | null;
@@ -89,23 +90,6 @@ function getAuthTokenFromCookie() {
   return match ? decodeURIComponent(match[1]) : "";
 }
 
-function normalizeImageUrl(url: string) {
-  if (!url) {
-    return "";
-  }
-  if (url.startsWith("s3://")) {
-    const withoutScheme = url.replace("s3://", "");
-    const firstSlash = withoutScheme.indexOf("/");
-    if (firstSlash === -1) {
-      return "";
-    }
-    const bucket = withoutScheme.slice(0, firstSlash);
-    const key = withoutScheme.slice(firstSlash + 1);
-    return `https://${bucket}.s3.amazonaws.com/${key}`;
-  }
-  return url;
-}
-
 export default function ReceiptDetailPage() {
   const params = useParams<{ id: string }>();
   const receiptId = params?.id;
@@ -113,6 +97,10 @@ export default function ReceiptDetailPage() {
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
   const [imageFailed, setImageFailed] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [attachmentStatus, setAttachmentStatus] = useState<
+    "idle" | "loading" | "error" | "success"
+  >("idle");
 
   useEffect(() => {
     let isMounted = true;
@@ -156,11 +144,20 @@ export default function ReceiptDetailPage() {
           })
           .filter((item): item is ReceiptItem => item !== null);
 
+        const imageObject = toObject(payloadObject.image);
+        const imageId = toNumber(
+          payloadObject.imageId ??
+            payloadObject.image_id ??
+            imageObject?.id ??
+            imageObject?.imageId
+        );
+
         setDetail({
           receiptId: toNumber(payloadObject.receiptId),
           merchantName: toString(payloadObject.merchantName) || "Unknown Merchant",
           receiptDate: toString(payloadObject.receiptDate),
           currency: toString(payloadObject.currency),
+          imageId,
           imageUrl: toString(payloadObject.imageUrl),
           reviewed: toBoolean(payloadObject.reviewed),
           subtotal: toNumber(payloadObject.subtotal),
@@ -185,6 +182,69 @@ export default function ReceiptDetailPage() {
     };
   }, [receiptId]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAttachment = async () => {
+      if (!detail) {
+        setAttachmentUrl("");
+        setAttachmentStatus("idle");
+        return;
+      }
+
+      const rawUrl = detail.imageUrl;
+      if (rawUrl && (rawUrl.startsWith("http://") || rawUrl.startsWith("https://"))) {
+        setAttachmentUrl(rawUrl);
+        setAttachmentStatus("success");
+        return;
+      }
+
+      if (!detail.imageId) {
+        setAttachmentUrl("");
+        setAttachmentStatus("idle");
+        return;
+      }
+
+      try {
+        setAttachmentStatus("loading");
+        const authToken = getAuthTokenFromCookie();
+        const response = await fetch(`/api/images/${detail.imageId}/presigned-url`, {
+          method: "GET",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+          credentials: "include",
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        const payloadObject = toObject(payload);
+        const url = payloadObject && typeof payloadObject.url === "string" ? payloadObject.url : "";
+
+        if (!response.ok || !url) {
+          throw new Error("Failed to load attachment.");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setAttachmentUrl(url);
+        setImageFailed(false);
+        setAttachmentStatus("success");
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setAttachmentUrl("");
+        setAttachmentStatus("error");
+      }
+    };
+
+    void fetchAttachment();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [detail?.imageId, detail?.imageUrl]);
+
   const totals = useMemo(() => {
     if (!detail) {
       return null;
@@ -194,13 +254,6 @@ export default function ReceiptDetailPage() {
       tax: formatCurrency(detail.tax, detail.currency),
       total: formatCurrency(detail.total, detail.currency),
     };
-  }, [detail]);
-
-  const attachmentUrl = useMemo(() => {
-    if (!detail) {
-      return "";
-    }
-    return normalizeImageUrl(detail.imageUrl);
   }, [detail]);
 
   return (
@@ -313,6 +366,10 @@ export default function ReceiptDetailPage() {
                     <p className={styles.attachmentMeta}>{totals.total}</p>
                   </div>
                 </div>
+              ) : attachmentStatus === "loading" ? (
+                <div className={styles.empty}>Loading attachment...</div>
+              ) : attachmentStatus === "error" ? (
+                <div className={styles.empty}>Failed to load attachment.</div>
               ) : (
                 <div className={styles.empty}>No attachment.</div>
               )}
@@ -360,3 +417,4 @@ export default function ReceiptDetailPage() {
     </div>
   );
 }
+
