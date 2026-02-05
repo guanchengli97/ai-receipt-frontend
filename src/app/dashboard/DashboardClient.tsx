@@ -474,7 +474,7 @@ export default function DashboardClient() {
             <span>Receipts</span>
           </div>
           <div className={styles.headerIcons}>
-            {/* <button
+            <button
               className={styles.logoutIcon}
               type="button"
               onClick={handleLogout}
@@ -483,7 +483,7 @@ export default function DashboardClient() {
             >
               <IconLogout />
             </button>
-            <button className={styles.iconButton} type="button">
+            {/* <button className={styles.iconButton} type="button">
               <IconBell />
             </button> */}
             <Link className={styles.avatar} href="/profile" aria-label="Open profile">
