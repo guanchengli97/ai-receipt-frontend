@@ -261,6 +261,11 @@
   font-weight: 600;
 }
 
+.statusReviewed {
+  background: #e7f7ee;
+  color: #1f7a4a;
+}
+
 .bottomNav {
   margin-top: auto;
   display: grid;
@@ -276,6 +281,15 @@
   font-size: 11px;
   color: #68789a;
   gap: 6px;
+}
+
+.navItemActive {
+  color: #3f5ed1;
+  font-weight: 600;
+}
+
+.navItemActive svg {
+  color: #3f5ed1;
 }
 
 .fab {

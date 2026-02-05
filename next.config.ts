@@ -9,6 +9,22 @@ function normalizeBackendOrigin(origin: string) {
 }
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.s3.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.s3.*.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.billdu.com",
+      },
+    ],
+  },
   async rewrites() {
     const defaultOrigin =
       process.env.NODE_ENV === "production"

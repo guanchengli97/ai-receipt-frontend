@@ -104,6 +104,11 @@ type Receipt = {
   date: string | null;
 };
 
+type ReceiptStats = {
+  totalSpentThisMonth: number | null;
+  receiptsProcessedThisMonth: number | null;
+};
+
 type UploadState = "idle" | "uploading" | "parsing" | "success" | "error";
 
 function toObject(value: unknown): Record<string, unknown> | null {
@@ -175,15 +180,20 @@ function normalizeReceipts(payload: unknown): Receipt[] {
       }
 
       const rawId =
-        receiptObject.id ?? receiptObject._id ?? receiptObject.receiptId ?? `receipt-${index}`;
+        receiptObject.receiptId ?? receiptObject.id ?? receiptObject._id ?? `receipt-${index}`;
       const id =
         typeof rawId === "string" || typeof rawId === "number" ? String(rawId) : `receipt-${index}`;
       const merchant =
         readFirstString(receiptObject, ["merchant", "merchantName", "store", "vendor", "name", "title"]) ??
         "Unknown Merchant";
       const amount = readFirstNumber(receiptObject, ["amount", "total", "totalAmount", "price", "sum"]);
+      const reviewed = receiptObject.reviewed;
       const status =
-        readFirstString(receiptObject, ["status", "processingStatus", "state"]) ?? "Unknown";
+        typeof reviewed === "boolean"
+          ? reviewed
+            ? "Reviewed"
+            : "Unreview"
+          : readFirstString(receiptObject, ["status", "processingStatus", "state"]) ?? "Unknown";
       const date = toDateIso(
         receiptObject.createdAt ??
           receiptObject.date ??
@@ -235,6 +245,10 @@ export default function DashboardClient() {
   const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
   const [isLoadingRecentReceipts, setIsLoadingRecentReceipts] = useState(true);
   const [recentReceiptsError, setRecentReceiptsError] = useState("");
+  const [stats, setStats] = useState<ReceiptStats>({
+    totalSpentThisMonth: null,
+    receiptsProcessedThisMonth: null,
+  });
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadMessage, setUploadMessage] = useState("");
 
@@ -275,6 +289,51 @@ export default function DashboardClient() {
   useEffect(() => {
     void fetchRecentReceipts();
   }, [fetchRecentReceipts]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        const authToken = getAuthTokenFromCookie();
+        const response = await fetch("/api/receipts/me/stats", {
+          method: "GET",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+          credentials: "include",
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        const payloadObject = toObject(payload);
+
+        if (!response.ok || !payloadObject) {
+          throw new Error("Failed to load stats.");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setStats({
+          totalSpentThisMonth: toNumber(payloadObject.totalSpentThisMonth),
+          receiptsProcessedThisMonth: toNumber(payloadObject.receiptsProcessedThisMonth),
+        });
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setStats({
+          totalSpentThisMonth: null,
+          receiptsProcessedThisMonth: null,
+        });
+      }
+    };
+
+    void fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (uploadState !== "success") {
@@ -398,6 +457,9 @@ export default function DashboardClient() {
           ? recentReceipts
           : [{ id: "empty", merchant: "No recent documents", amount: null, date: null, status: "Empty" }];
 
+  const isNavigableReceipt = (receipt: Receipt) =>
+    Boolean(receipt.id) && !["loading", "error", "empty"].includes(receipt.id);
+
   const handleLogout = () => {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
@@ -425,7 +487,9 @@ export default function DashboardClient() {
             <button className={styles.iconButton} type="button">
               <IconBell />
             </button>
-            <div className={styles.avatar}>AL</div>
+            <Link className={styles.avatar} href="/profile" aria-label="Open profile">
+              AL
+            </Link>
           </div>
         </header>
 
@@ -433,7 +497,7 @@ export default function DashboardClient() {
           <div className={styles.statCard}>
             <div className={styles.statInfo}>
               <h3>Total Spent</h3>
-              <p>$2,845</p>
+              <p>{formatAmount(stats.totalSpentThisMonth)}</p>
               <span>This Month</span>
             </div>
             <div className={styles.statIcon}>
@@ -444,7 +508,7 @@ export default function DashboardClient() {
           <div className={styles.statCard}>
             <div className={styles.statInfo}>
               <h3>Receipts Processed</h3>
-              <p>32</p>
+              <p>{stats.receiptsProcessedThisMonth ?? "--"}</p>
               <span>This Month</span>
             </div>
             <div className={styles.statIcon}>
@@ -469,18 +533,36 @@ export default function DashboardClient() {
             <Link href="#">View All</Link>
           </div>
           <div className={styles.list}>
-            {recentRows.map((receipt) => (
-              <div className={styles.listItem} key={receipt.id}>
-                <div className={styles.thumb}>{receipt.merchant.slice(0, 1).toUpperCase()}</div>
-                <div className={styles.meta}>
-                  <h4>{receipt.merchant}</h4>
-                  <p>
-                    {formatAmount(receipt.amount)} · {formatDate(receipt.date)}
-                  </p>
+            {recentRows.map((receipt) => {
+              const content = (
+                <>
+                  <div className={styles.thumb}>{receipt.merchant.slice(0, 1).toUpperCase()}</div>
+                  <div className={styles.meta}>
+                    <h4>{receipt.merchant}</h4>
+                    <p>
+                      {formatAmount(receipt.amount)} · {formatDate(receipt.date)}
+                    </p>
+                  </div>
+                  <span
+                    className={`${styles.statusTag} ${
+                      receipt.status === "Reviewed" ? styles.statusReviewed : ""
+                    }`}
+                  >
+                    {receipt.status}
+                  </span>
+                </>
+              );
+
+              return isNavigableReceipt(receipt) ? (
+                <Link className={styles.listItem} href={`/receipts/${receipt.id}`} key={receipt.id}>
+                  {content}
+                </Link>
+              ) : (
+                <div className={styles.listItem} key={receipt.id}>
+                  {content}
                 </div>
-                <span className={styles.statusTag}>{receipt.status}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -491,7 +573,7 @@ export default function DashboardClient() {
         )}
 
         <nav className={styles.bottomNav}>
-          <div className={styles.navItem}>
+          <div className={`${styles.navItem} ${styles.navItemActive}`}>
             <IconReceipt />
             Dashboard
           </div>
