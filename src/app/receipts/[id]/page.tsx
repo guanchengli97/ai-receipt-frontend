@@ -101,6 +101,8 @@ export default function ReceiptDetailPage() {
   const [attachmentStatus, setAttachmentStatus] = useState<
     "idle" | "loading" | "error" | "success"
   >("idle");
+  const [reviewStatus, setReviewStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [reviewMessage, setReviewMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -167,6 +169,8 @@ export default function ReceiptDetailPage() {
         });
         setImageFailed(false);
         setStatus("success");
+        setReviewStatus("idle");
+        setReviewMessage("");
       } catch {
         if (!isMounted) {
           return;
@@ -256,6 +260,49 @@ export default function ReceiptDetailPage() {
     };
   }, [detail]);
 
+  const handleReviewToggle = async () => {
+    if (!detail?.receiptId || reviewStatus === "saving") {
+      return;
+    }
+
+    try {
+      setReviewStatus("saving");
+      setReviewMessage("");
+
+      const authToken = getAuthTokenFromCookie();
+      const response = await fetch(`/api/receipts/${detail.receiptId}/review`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        cache: "no-store",
+        body: JSON.stringify({ reviewed: !detail.reviewed }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          typeof toObject(payload)?.message === "string"
+            ? String(toObject(payload)?.message)
+            : "Failed to update review status.";
+        throw new Error(message);
+      }
+
+      setDetail((current) =>
+        current ? { ...current, reviewed: !current.reviewed } : current
+      );
+      setReviewStatus("idle");
+      setReviewMessage("Review status updated.");
+    } catch (error) {
+      setReviewStatus("error");
+      setReviewMessage(
+        error instanceof Error ? error.message : "Failed to update review status."
+      );
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.phone}>
@@ -336,6 +383,18 @@ export default function ReceiptDetailPage() {
                 <span>{totals.total}</span>
               </div>
             </section>
+
+            <button
+              className={styles.reviewButton}
+              type="button"
+              onClick={handleReviewToggle}
+              disabled={reviewStatus === "saving"}
+            >
+              {detail.reviewed ? "Mark as Unreviewed" : "Mark as Reviewed"}
+            </button>
+            {reviewMessage && (
+              <p className={styles.reviewMessage}>{reviewMessage}</p>
+            )}
 
             <section className={styles.card}>
               <h3>Attachment</h3>
