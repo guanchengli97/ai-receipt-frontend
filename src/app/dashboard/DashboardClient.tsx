@@ -179,6 +179,14 @@ function toDateString(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+function toTimestamp(value: string | null) {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 function normalizeReceipts(payload: unknown): Receipt[] {
   const payloadObject = toObject(payload);
   const receiptsRaw = Array.isArray(payload)
@@ -213,21 +221,29 @@ function normalizeReceipts(payload: unknown): Receipt[] {
             ? "Reviewed"
             : "Unreview"
           : readFirstString(receiptObject, ["status", "processingStatus", "state"]) ?? "Unknown";
+      const createdAt = toDateString(receiptObject.createdAt ?? receiptObject.created_at);
       const date = toDateString(
-        receiptObject.createdAt ??
+        createdAt ??
           receiptObject.date ??
           receiptObject.receiptDate ??
           receiptObject.transactionDate
       );
 
-      return { id, merchant, amount, status, date };
+      return { id, merchant, amount, status, date, createdAt };
     })
-    .filter((receipt): receipt is Receipt => receipt !== null)
+    .filter((receipt): receipt is (Receipt & { createdAt: string | null }) => receipt !== null)
     .sort((left, right) => {
-      const leftTime = left.date ? Date.parse(left.date) : 0;
-      const rightTime = right.date ? Date.parse(right.date) : 0;
+      const leftTime = toTimestamp(left.createdAt);
+      const rightTime = toTimestamp(right.createdAt);
       return rightTime - leftTime;
-    });
+    })
+    .map((receipt) => ({
+      id: receipt.id,
+      merchant: receipt.merchant,
+      amount: receipt.amount,
+      status: receipt.status,
+      date: receipt.date,
+    }));
 }
 
 function formatAmount(amount: number | null) {
