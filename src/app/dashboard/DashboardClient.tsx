@@ -241,6 +241,7 @@ function getAuthTokenFromCookie() {
 
 export default function DashboardClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userInitials, setUserInitials] = useState("U");
   const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
   const [isLoadingRecentReceipts, setIsLoadingRecentReceipts] = useState(true);
   const [recentReceiptsError, setRecentReceiptsError] = useState("");
@@ -328,6 +329,45 @@ export default function DashboardClient() {
     };
 
     void fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserProfile = async () => {
+      try {
+        const authToken = getAuthTokenFromCookie();
+        const response = await fetch("/api/users/me", {
+          method: "GET",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+          credentials: "include",
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        const payloadObject = toObject(payload);
+        const username =
+          payloadObject && typeof payloadObject.username === "string"
+            ? payloadObject.username.trim()
+            : "";
+
+        if (!response.ok || !isMounted || !username) {
+          return;
+        }
+
+        const parts = username.split(" ").filter(Boolean);
+        const first = parts[0]?.[0] ?? "U";
+        const second = parts[1]?.[0] ?? "";
+        setUserInitials(`${first}${second}`.toUpperCase());
+      } catch {
+        // Keep default initials when profile fetch fails.
+      }
+    };
+
+    void fetchUserProfile();
 
     return () => {
       isMounted = false;
@@ -487,7 +527,7 @@ export default function DashboardClient() {
               <IconBell />
             </button> */}
             <Link className={styles.avatar} href="/profile" aria-label="Open profile">
-              AL
+              {userInitials}
             </Link>
           </div>
         </header>
