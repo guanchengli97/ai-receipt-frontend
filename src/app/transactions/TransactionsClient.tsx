@@ -63,6 +63,31 @@ function toDateString(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+function parseReceiptDate(value: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  // Keep YYYY-MM-DD in local time to avoid timezone shift.
+  const dateOnlyMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const monthIndex = Number(dateOnlyMatch[2]) - 1;
+    const day = Number(dateOnlyMatch[3]);
+    return new Date(year, monthIndex, day);
+  }
+
+  const parsed = Date.parse(trimmed);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  return new Date(parsed);
+}
+
 function normalizeTransactions(payload: unknown): Transaction[] {
   const payloadObject = toObject(payload);
   const receiptsRaw = Array.isArray(payload)
@@ -100,8 +125,8 @@ function normalizeTransactions(payload: unknown): Transaction[] {
     })
     .filter((receipt): receipt is Transaction => receipt !== null)
     .sort((left, right) => {
-      const leftTime = left.date ? Date.parse(left.date) : 0;
-      const rightTime = right.date ? Date.parse(right.date) : 0;
+      const leftTime = parseReceiptDate(left.date)?.getTime() ?? 0;
+      const rightTime = parseReceiptDate(right.date)?.getTime() ?? 0;
       return rightTime - leftTime;
     });
 }
@@ -129,25 +154,22 @@ function getDateLabel(value: string | null) {
   if (!value) {
     return "--";
   }
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
+  const parsedDate = parseReceiptDate(value);
+  if (!parsedDate) {
     return value;
   }
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
-  }).format(new Date(parsed));
+  }).format(parsedDate);
 }
 
 function getMonthLabel(value: string | null) {
-  if (!value) {
+  const parsedDate = parseReceiptDate(value);
+  if (!parsedDate) {
     return "Unknown";
   }
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return "Unknown";
-  }
-  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date(parsed)).toUpperCase();
+  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(parsedDate).toUpperCase();
 }
 
 type GroupedTransactions = {
@@ -159,8 +181,8 @@ function groupTransactionsByYearAndMonth(transactions: Transaction[]): GroupedTr
   const groupedMap = new Map<string, Map<string, Transaction[]>>();
 
   for (const item of transactions) {
-    const parsed = item.date ? Date.parse(item.date) : Number.NaN;
-    const year = Number.isNaN(parsed) ? "Unknown" : String(new Date(parsed).getFullYear());
+    const parsedDate = parseReceiptDate(item.date);
+    const year = parsedDate ? String(parsedDate.getFullYear()) : "Unknown";
     const month = getMonthLabel(item.date);
 
     if (!groupedMap.has(year)) {
@@ -289,12 +311,11 @@ export default function TransactionsClient() {
     const year = now.getFullYear();
 
     return transactions.filter((item) => {
-      const parsed = item.date ? Date.parse(item.date) : Number.NaN;
-      if (Number.isNaN(parsed)) {
+      const parsedDate = parseReceiptDate(item.date);
+      if (!parsedDate) {
         return false;
       }
-      const itemDate = new Date(parsed);
-      return itemDate.getFullYear() === year && itemDate.getMonth() === month;
+      return parsedDate.getFullYear() === year && parsedDate.getMonth() === month;
     });
   }, [tab, transactions]);
 
