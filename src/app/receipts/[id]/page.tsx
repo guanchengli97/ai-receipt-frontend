@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 
 type ReceiptItem = {
@@ -225,7 +225,9 @@ function isReceiptEdited(detail: ReceiptDetail, editDetail: EditableReceipt) {
 
 export default function ReceiptDetailPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const receiptId = params?.id;
+  const backHref = searchParams?.get("from") === "transactions" ? "/transactions" : "/dashboard";
   const [detail, setDetail] = useState<ReceiptDetail | null>(null);
   const [editDetail, setEditDetail] = useState<EditableReceipt | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
@@ -579,7 +581,7 @@ export default function ReceiptDetailPage() {
     <div className={styles.page}>
       <div className={styles.phone}>
         <header className={styles.header}>
-          <Link className={styles.back} href="/dashboard" aria-label="Back to dashboard">
+          <Link className={styles.back} href={backHref} aria-label="Back">
             ←
           </Link>
           <div className={styles.headerMain}>

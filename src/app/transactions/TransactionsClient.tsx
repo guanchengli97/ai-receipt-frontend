@@ -412,7 +412,10 @@ export default function TransactionsClient() {
                     <div className={styles.monthList}>
                       {monthGroup.items.map((item, index) => (
                         <div className={styles.transactionRow} key={item.id}>
-                          <Link className={styles.rowText} href={`/receipts/${item.id}`}>
+                          <Link
+                            className={styles.rowText}
+                            href={`/receipts/${item.id}?from=transactions`}
+                          >
                             <span className={styles.merchant}>{item.merchant}</span>
                             <span className={styles.meta}>
                               {formatAmount(item.amount)} · {getDateLabel(item.date)}
@@ -458,4 +461,3 @@ export default function TransactionsClient() {
     </div>
   );
 }
-
