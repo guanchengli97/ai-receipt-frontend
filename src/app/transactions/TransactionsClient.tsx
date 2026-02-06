@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 
@@ -205,7 +206,9 @@ function groupTransactionsByYearAndMonth(transactions: Transaction[]): GroupedTr
 }
 
 export default function TransactionsClient() {
-  const [tab, setTab] = useState<"month" | "all">("month");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams?.get("tab") === "all" ? "all" : "month";
+  const [tab, setTab] = useState<"month" | "all">(initialTab);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState<ReceiptStats>({
     totalSpentThisMonth: null,
@@ -414,7 +417,7 @@ export default function TransactionsClient() {
                         <div className={styles.transactionRow} key={item.id}>
                           <Link
                             className={styles.rowText}
-                            href={`/receipts/${item.id}?from=transactions`}
+                            href={`/receipts/${item.id}?from=transactions&tab=${tab}`}
                           >
                             <span className={styles.merchant}>{item.merchant}</span>
                             <span className={styles.meta}>

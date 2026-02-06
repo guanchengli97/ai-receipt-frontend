@@ -227,7 +227,14 @@ export default function ReceiptDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const receiptId = params?.id;
-  const backHref = searchParams?.get("from") === "transactions" ? "/transactions" : "/dashboard";
+  const from = searchParams?.get("from");
+  const fromTab = searchParams?.get("tab");
+  const backHref =
+    from === "transactions"
+      ? fromTab === "all" || fromTab === "month"
+        ? `/transactions?tab=${fromTab}`
+        : "/transactions"
+      : "/dashboard";
   const [detail, setDetail] = useState<ReceiptDetail | null>(null);
   const [editDetail, setEditDetail] = useState<EditableReceipt | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
