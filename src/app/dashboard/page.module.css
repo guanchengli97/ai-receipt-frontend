@@ -270,7 +270,7 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 40px;
+  bottom: 20px;
   width: min(420px, calc(100vw - 36px));
   display: grid;
   grid-template-columns: repeat(3, 1fr);

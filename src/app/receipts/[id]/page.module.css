@@ -391,6 +391,28 @@
   color: #6b7bb0;
 }
 
+.deleteButton {
+  width: 100%;
+  border: none;
+  background: #fff1f1;
+  color: #d14949;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.deleteButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.deleteMessage {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #c44343;
+}
+
 .saveButton {
   width: 100%;
   border: none;

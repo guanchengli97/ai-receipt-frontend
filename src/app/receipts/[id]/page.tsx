@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 
 type ReceiptItem = {
@@ -225,6 +225,7 @@ function isReceiptEdited(detail: ReceiptDetail, editDetail: EditableReceipt) {
 
 export default function ReceiptDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const receiptId = params?.id;
   const from = searchParams?.get("from");
@@ -249,6 +250,8 @@ export default function ReceiptDetailPage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState<"idle" | "deleting" | "error">("idle");
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -584,6 +587,52 @@ export default function ReceiptDetailPage() {
     }
   };
 
+  const handleDeleteReceipt = async () => {
+    if (!detail?.receiptId || deleteStatus === "deleting") {
+      return;
+    }
+
+    const shouldDelete = window.confirm("Delete this receipt?");
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setDeleteStatus("deleting");
+      setDeleteMessage("");
+
+      const authToken = getAuthTokenFromCookie();
+      const response = await fetch(`/api/receipts/${detail.receiptId}`, {
+        method: "DELETE",
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+        credentials: "include",
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => null);
+      const payloadObject = toObject(payload);
+
+      if (!response.ok) {
+        const message =
+          typeof payloadObject?.message === "string"
+            ? payloadObject.message
+            : typeof payloadObject?.error === "string"
+              ? payloadObject.error
+              : "Failed to delete receipt.";
+        throw new Error(message);
+      }
+
+      const deletedCount = toNumber(payloadObject?.deletedCount);
+      if (deletedCount === null || deletedCount < 1) {
+        throw new Error("Failed to delete receipt.");
+      }
+
+      router.push(backHref);
+    } catch (error) {
+      setDeleteStatus("error");
+      setDeleteMessage(error instanceof Error ? error.message : "Failed to delete receipt.");
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.phone}>
@@ -881,6 +930,16 @@ export default function ReceiptDetailPage() {
             {reviewMessage && (
               <p className={styles.reviewMessage}>{reviewMessage}</p>
             )}
+
+            <button
+              className={styles.deleteButton}
+              type="button"
+              onClick={handleDeleteReceipt}
+              disabled={deleteStatus === "deleting"}
+            >
+              {deleteStatus === "deleting" ? "Deleting..." : "Delete Receipt"}
+            </button>
+            {deleteMessage && <p className={styles.deleteMessage}>{deleteMessage}</p>}
 
             <section className={styles.card}>
               <h3>Attachment</h3>
