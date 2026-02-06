@@ -240,6 +240,7 @@ export default function TransactionsClient() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleteStatus, setBulkDeleteStatus] = useState<"idle" | "deleting" | "error" | "success">("idle");
   const [bulkDeleteMessage, setBulkDeleteMessage] = useState("");
+  const [exportMessage, setExportMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -421,25 +422,81 @@ export default function TransactionsClient() {
     }
 
     const exportRows = transactions.filter((item) => selectedIds.includes(item.id));
+    const escapeCsvValue = (value: string | number | null) => {
+      if (value === null) {
+        return "";
+      }
+      const text = String(value);
+      if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
+        return `"${text.replace(/"/g, "\"\"")}"`;
+      }
+      return text;
+    };
+
     const csv = [
       "id,merchant,amount,date",
       ...exportRows.map((item) =>
         [
-          item.id,
-          `"${item.merchant.replace(/"/g, '""')}"`,
-          item.amount ?? "",
-          item.date ?? "",
+          escapeCsvValue(item.id),
+          escapeCsvValue(item.merchant),
+          escapeCsvValue(item.amount),
+          escapeCsvValue(item.date),
         ].join(",")
       ),
     ].join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "transactions.csv";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    const today = new Date();
+    const fileDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+      today.getDate()
+    ).padStart(2, "0")}`;
+    const fileName = `transactions-${fileDate}.csv`;
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+
+    const shareWithSystem = async () => {
+      if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+        return false;
+      }
+      try {
+        const file = new File([blob], fileName, { type: "text/csv;charset=utf-8;" });
+        if (
+          typeof navigator.canShare === "function" &&
+          !navigator.canShare({ files: [file] })
+        ) {
+          return false;
+        }
+        await navigator.share({
+          title: "Transactions CSV",
+          files: [file],
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const downloadFile = () => {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    const exportCsv = async () => {
+      setExportMessage("");
+      const shared = await shareWithSystem();
+      if (shared) {
+        setExportMessage("Exported successfully.");
+        return;
+      }
+      downloadFile();
+      setExportMessage("CSV download started.");
+    };
+
+    void exportCsv();
   };
 
   return (
@@ -554,6 +611,7 @@ export default function TransactionsClient() {
             {bulkDeleteMessage}
           </p>
         )}
+        {exportMessage && <p className={styles.actionMessage}>{exportMessage}</p>}
       </div>
     </div>
   );
