@@ -26,6 +26,10 @@
   gap: 8px;
 }
 
+.headerMain {
+  min-width: 0;
+}
+
 .back {
   width: 36px;
   height: 36px;
@@ -49,6 +53,22 @@
   font-size: 12px;
   color: #7a89aa;
   font-weight: 600;
+}
+
+.editButton {
+  border: none;
+  background: #edf3ff;
+  color: #5574c8;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.editButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .status {
@@ -165,6 +185,24 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+}
+
+.itemViewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.itemViewCell {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #6c7aa2;
+}
+
+.itemViewCell strong {
+  font-size: 13px;
+  color: #1d2944;
 }
 
 .itemField {

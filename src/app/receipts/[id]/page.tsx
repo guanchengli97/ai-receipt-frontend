@@ -239,6 +239,7 @@ export default function ReceiptDetailPage() {
   const [reviewMessage, setReviewMessage] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -275,6 +276,7 @@ export default function ReceiptDetailPage() {
         setReviewMessage("");
         setSaveStatus("idle");
         setSaveMessage("");
+        setIsEditing(false);
       } catch {
         if (!isMounted) {
           return;
@@ -476,10 +478,32 @@ export default function ReceiptDetailPage() {
       setEditDetail(buildEditableReceipt(nextDetail));
       setSaveStatus("success");
       setSaveMessage("Receipt updated.");
+      setIsEditing(false);
     } catch (error) {
       setSaveStatus("error");
       setSaveMessage(error instanceof Error ? error.message : "Failed to update receipt.");
     }
+  };
+
+  const handleStartEdit = () => {
+    if (!detail) {
+      return;
+    }
+    setEditDetail(buildEditableReceipt(detail));
+    setSaveStatus("idle");
+    setSaveMessage("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (!detail) {
+      setIsEditing(false);
+      return;
+    }
+    setEditDetail(buildEditableReceipt(detail));
+    setSaveStatus("idle");
+    setSaveMessage("");
+    setIsEditing(false);
   };
 
   const handleItemChange = (
@@ -558,12 +582,26 @@ export default function ReceiptDetailPage() {
           <Link className={styles.back} href="/dashboard" aria-label="Back to dashboard">
             ←
           </Link>
-          <div className={styles.headerTitle}>
-            {detail?.merchantName || "Receipt"}
+          <div className={styles.headerMain}>
+            <div className={styles.headerTitle}>{detail?.merchantName || "Receipt"}</div>
+            <div className={styles.headerDate}>
+              {detail ? formatDate(detail.receiptDate) : ""}
+            </div>
           </div>
-          <div className={styles.headerDate}>
-            {detail ? formatDate(detail.receiptDate) : ""}
-          </div>
+          {isEditing ? (
+            <button className={styles.editButton} type="button" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          ) : (
+            <button
+              className={styles.editButton}
+              type="button"
+              onClick={handleStartEdit}
+              disabled={status !== "success" || !detail}
+            >
+              Edit
+            </button>
+          )}
         </header>
 
         {status === "loading" && <div className={styles.status}>Loading receipt...</div>}
@@ -592,88 +630,112 @@ export default function ReceiptDetailPage() {
               <h3>Receipt Details</h3>
               <div className={styles.detailRow}>
                 <span>Merchant</span>
-                <input
-                  className={styles.detailInput}
-                  type="text"
-                  value={editDetail?.merchantName ?? ""}
-                  onChange={(event) =>
-                    setEditDetail((current) =>
-                      current ? { ...current, merchantName: event.target.value } : current
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <input
+                    className={styles.detailInput}
+                    type="text"
+                    value={editDetail?.merchantName ?? ""}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, merchantName: event.target.value } : current
+                      )
+                    }
+                  />
+                ) : (
+                  <span>{detail.merchantName || "--"}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span>Receipt Date</span>
-                <input
-                  className={styles.detailInput}
-                  type="date"
-                  value={editDetail?.receiptDate ?? ""}
-                  onChange={(event) =>
-                    setEditDetail((current) =>
-                      current ? { ...current, receiptDate: event.target.value } : current
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <input
+                    className={styles.detailInput}
+                    type="date"
+                    value={editDetail?.receiptDate ?? ""}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, receiptDate: event.target.value } : current
+                      )
+                    }
+                  />
+                ) : (
+                  <span>{formatDate(detail.receiptDate)}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span>Currency</span>
-                <select
-                  className={styles.detailInput}
-                  value={editDetail?.currency ?? "USD"}
-                  onChange={(event) =>
-                    setEditDetail((current) =>
-                      current ? { ...current, currency: event.target.value } : current
-                    )
-                  }
-                >
-                  <option value="USD">USD</option>
-                </select>
+                {isEditing ? (
+                  <select
+                    className={styles.detailInput}
+                    value={editDetail?.currency ?? "USD"}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, currency: event.target.value } : current
+                      )
+                    }
+                  >
+                    <option value="USD">USD</option>
+                  </select>
+                ) : (
+                  <span>{detail.currency || "--"}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span>Subtotal</span>
-                <input
-                  className={styles.detailInput}
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={editDetail?.subtotal ?? ""}
-                  onChange={(event) =>
-                    setEditDetail((current) =>
-                      current ? { ...current, subtotal: event.target.value } : current
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <input
+                    className={styles.detailInput}
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={editDetail?.subtotal ?? ""}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, subtotal: event.target.value } : current
+                      )
+                    }
+                  />
+                ) : (
+                  <span>{totals.subtotal}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span>Tax</span>
-                <input
-                  className={styles.detailInput}
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={editDetail?.tax ?? ""}
-                  onChange={(event) =>
-                    setEditDetail((current) =>
-                      current ? { ...current, tax: event.target.value } : current
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <input
+                    className={styles.detailInput}
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={editDetail?.tax ?? ""}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, tax: event.target.value } : current
+                      )
+                    }
+                  />
+                ) : (
+                  <span>{totals.tax}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span>Total</span>
-                <input
-                  className={styles.detailInput}
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  value={editDetail?.total ?? ""}
-                  onChange={(event) =>
-                    setEditDetail((current) =>
-                      current ? { ...current, total: event.target.value } : current
-                    )
-                  }
-                />
+                {isEditing ? (
+                  <input
+                    className={styles.detailInput}
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={editDetail?.total ?? ""}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, total: event.target.value } : current
+                      )
+                    }
+                  />
+                ) : (
+                  <span>{totals.total}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span>Status</span>
@@ -688,88 +750,113 @@ export default function ReceiptDetailPage() {
               )}
               {editDetail?.items.map((item, index) => (
                 <div className={styles.itemEditor} key={item.id}>
-                  <div className={styles.itemGrid}>
-                    <label className={styles.itemField}>
-                      <span>Description</span>
-                      <input
-                        className={styles.itemInput}
-                        type="text"
-                        placeholder="Description"
-                        value={item.description}
-                        onChange={(event) =>
-                          handleItemChange(index, "description", event.target.value)
-                        }
-                      />
-                    </label>
-                    <label className={styles.itemField}>
-                      <span>Qty</span>
-                      <input
-                        className={styles.itemInput}
-                        type="number"
-                        inputMode="decimal"
-                        step="1"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={(event) =>
-                          handleItemChange(index, "quantity", event.target.value)
-                        }
-                      />
-                    </label>
-                    <label className={styles.itemField}>
-                      <span>Unit</span>
-                      <input
-                        className={styles.itemInput}
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        placeholder="Unit"
-                        value={item.unitPrice}
-                        onChange={(event) =>
-                          handleItemChange(index, "unitPrice", event.target.value)
-                        }
-                      />
-                    </label>
-                    <label className={styles.itemField}>
-                      <span>Total</span>
-                      <input
-                        className={styles.itemInput}
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        placeholder="Total"
-                        value={item.totalPrice}
-                        onChange={(event) =>
-                          handleItemChange(index, "totalPrice", event.target.value)
-                        }
-                      />
-                    </label>
+                  <div className={isEditing ? styles.itemGrid : styles.itemViewGrid}>
+                    {isEditing ? (
+                      <>
+                        <label className={styles.itemField}>
+                          <span>Description</span>
+                          <input
+                            className={styles.itemInput}
+                            type="text"
+                            placeholder="Description"
+                            value={item.description}
+                            onChange={(event) =>
+                              handleItemChange(index, "description", event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className={styles.itemField}>
+                          <span>Qty</span>
+                          <input
+                            className={styles.itemInput}
+                            type="number"
+                            inputMode="decimal"
+                            step="1"
+                            placeholder="Qty"
+                            value={item.quantity}
+                            onChange={(event) =>
+                              handleItemChange(index, "quantity", event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className={styles.itemField}>
+                          <span>Unit</span>
+                          <input
+                            className={styles.itemInput}
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            placeholder="Unit"
+                            value={item.unitPrice}
+                            onChange={(event) =>
+                              handleItemChange(index, "unitPrice", event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className={styles.itemField}>
+                          <span>Total</span>
+                          <input
+                            className={styles.itemInput}
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            placeholder="Total"
+                            value={item.totalPrice}
+                            onChange={(event) =>
+                              handleItemChange(index, "totalPrice", event.target.value)
+                            }
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <div className={styles.itemViewCell}>
+                          <span>Description</span>
+                          <strong>{item.description || "--"}</strong>
+                        </div>
+                        <div className={styles.itemViewCell}>
+                          <span>Qty</span>
+                          <strong>{item.quantity || "--"}</strong>
+                        </div>
+                        <div className={styles.itemViewCell}>
+                          <span>Unit</span>
+                          <strong>{item.unitPrice || "--"}</strong>
+                        </div>
+                        <div className={styles.itemViewCell}>
+                          <span>Total</span>
+                          <strong>{item.totalPrice || "--"}</strong>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <button
-                    className={styles.itemRemove}
-                    type="button"
-                    onClick={() => handleItemRemove(index)}
-                  >
-                    Remove
-                  </button>
+                  {isEditing && (
+                    <button
+                      className={styles.itemRemove}
+                      type="button"
+                      onClick={() => handleItemRemove(index)}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               ))}
-              <button
-                className={styles.itemAdd}
-                type="button"
-                onClick={handleItemAdd}
-              >
-                Add Item
-              </button>
+              {isEditing && (
+                <button className={styles.itemAdd} type="button" onClick={handleItemAdd}>
+                  Add Item
+                </button>
+              )}
             </section>
 
-            <button
-              className={styles.saveButton}
-              type="button"
-              onClick={handleSaveReceipt}
-              disabled={saveStatus === "saving" || !editDetail}
-            >
-              {saveStatus === "saving" ? "Saving..." : "Save Changes"}
-            </button>
+            {isEditing && (
+              <button
+                className={styles.saveButton}
+                type="button"
+                onClick={handleSaveReceipt}
+                disabled={saveStatus === "saving" || !editDetail}
+              >
+                {saveStatus === "saving" ? "Saving..." : "Save Changes"}
+              </button>
+            )}
             {saveMessage && (
               <p className={styles.saveMessage}>{saveMessage}</p>
             )}
