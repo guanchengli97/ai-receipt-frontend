@@ -238,6 +238,8 @@ export default function TransactionsClient() {
   });
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteStatus, setBulkDeleteStatus] = useState<"idle" | "deleting" | "error" | "success">("idle");
+  const [bulkDeleteMessage, setBulkDeleteMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -344,11 +346,73 @@ export default function TransactionsClient() {
   };
 
   const handleDelete = () => {
-    if (selectedIds.length === 0) {
+    if (selectedIds.length === 0 || bulkDeleteStatus === "deleting") {
       return;
     }
-    setTransactions((current) => current.filter((item) => !selectedIds.includes(item.id)));
-    setSelectedIds([]);
+
+    const parsedIds = selectedIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (parsedIds.length !== selectedIds.length) {
+      setBulkDeleteStatus("error");
+      setBulkDeleteMessage("Some selected receipts have invalid ids and cannot be deleted.");
+      return;
+    }
+
+    const deleteReceipts = async () => {
+      try {
+        setBulkDeleteStatus("deleting");
+        setBulkDeleteMessage("");
+
+        const authToken = getAuthTokenFromCookie();
+        const response = await fetch("/api/receipts", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          credentials: "include",
+          cache: "no-store",
+          body: JSON.stringify({ ids: parsedIds }),
+        });
+        const payload = await response.json().catch(() => null);
+        const payloadObject = toObject(payload);
+
+        if (!response.ok || !payloadObject) {
+          const message =
+            typeof payloadObject?.message === "string"
+              ? payloadObject.message
+              : typeof payloadObject?.error === "string"
+                ? payloadObject.error
+                : "Failed to delete selected receipts.";
+          throw new Error(message);
+        }
+
+        const deletedIdsRaw = Array.isArray(payloadObject.deletedIds) ? payloadObject.deletedIds : [];
+        const deletedIds = deletedIdsRaw
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value));
+
+        setTransactions((current) =>
+          current.filter((item) => !deletedIds.includes(Number(item.id)))
+        );
+        setSelectedIds([]);
+        setBulkDeleteStatus("success");
+        setBulkDeleteMessage(
+          typeof payloadObject.deletedCount === "number"
+            ? `Deleted ${payloadObject.deletedCount} receipt(s).`
+            : "Receipts deleted."
+        );
+      } catch (error) {
+        setBulkDeleteStatus("error");
+        setBulkDeleteMessage(
+          error instanceof Error ? error.message : "Failed to delete selected receipts."
+        );
+      }
+    };
+
+    void deleteReceipts();
   };
 
   const handleExport = () => {
@@ -467,10 +531,10 @@ export default function TransactionsClient() {
           <button
             className={styles.deleteButton}
             type="button"
-            disabled={selectedIds.length === 0}
+            disabled={selectedIds.length === 0 || bulkDeleteStatus === "deleting"}
             onClick={handleDelete}
           >
-            Delete
+            {bulkDeleteStatus === "deleting" ? "Deleting..." : "Delete"}
           </button>
           <button
             className={styles.exportButton}
@@ -481,6 +545,15 @@ export default function TransactionsClient() {
             Export
           </button>
         </footer>
+        {bulkDeleteMessage && (
+          <p
+            className={`${styles.actionMessage} ${
+              bulkDeleteStatus === "error" ? styles.actionMessageError : ""
+            }`}
+          >
+            {bulkDeleteMessage}
+          </p>
+        )}
       </div>
     </div>
   );

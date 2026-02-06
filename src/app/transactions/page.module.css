@@ -232,6 +232,17 @@
   cursor: not-allowed;
 }
 
+.actionMessage {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #6b7bb0;
+  text-align: center;
+}
+
+.actionMessageError {
+  color: #c44343;
+}
+
 @media (max-width: 480px) {
   .page {
     padding: 0;
