@@ -596,10 +596,10 @@ export default function DashboardClient() {
               onChange={handleFileSelect}
             />
           </div>
-          <div className={styles.navItem}>
+          <Link className={styles.navItem} href="/transactions">
             <IconLock />
             Transactions
-          </div>
+          </Link>
         </nav>
       </div>
     </div>
