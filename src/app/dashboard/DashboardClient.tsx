@@ -764,6 +764,11 @@ export default function DashboardClient() {
             <span>Recent Documents</span>
             {/* <Link href="#">View All</Link> */}
           </div>
+          {uploadState !== "idle" && (
+            <div className={styles.uploadStatus} role="status" aria-live="polite">
+              {uploadMessage}
+            </div>
+          )}
           <div className={styles.list}>
             {recentRows.map((receipt) => {
               const content = (
@@ -797,12 +802,6 @@ export default function DashboardClient() {
             })}
           </div>
         </section>
-
-        {uploadState !== "idle" && (
-          <div className={styles.uploadStatus} role="status" aria-live="polite">
-            {uploadMessage}
-          </div>
-        )}
 
         <nav className={styles.bottomNav}>
           <div className={`${styles.navItem} ${styles.navItemActive}`}>
