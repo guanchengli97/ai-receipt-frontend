@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 
 const IconBell = () => (
@@ -109,7 +109,27 @@ type ReceiptStats = {
   receiptsProcessedThisMonth: number | null;
 };
 
+type CategoryStat = {
+  category: string;
+  amount: number;
+};
+
+type SpendingByCategoryStats = {
+  currency: string;
+  totalSpent: number | null;
+  categories: CategoryStat[];
+};
+
 type UploadState = "idle" | "uploading" | "parsing" | "success" | "error";
+
+const CATEGORY_COLOR_PALETTE = [
+  "#f28b45",
+  "#6ea8ff",
+  "#9ed19d",
+  "#b089f7",
+  "#f3c969",
+  "#6fd7cc",
+];
 
 function toObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -219,6 +239,23 @@ function formatAmount(amount: number | null) {
   }).format(amount);
 }
 
+function formatAmountWithCurrency(amount: number, currency: string) {
+  const normalizedCurrency = currency && currency.trim() ? currency.trim().toUpperCase() : "USD";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+}
+
 function formatDate(date: string | null) {
   if (!date) {
     return "--";
@@ -251,6 +288,12 @@ export default function DashboardClient() {
   });
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadMessage, setUploadMessage] = useState("");
+  const [categoryStats, setCategoryStats] = useState<SpendingByCategoryStats>({
+    currency: "USD",
+    totalSpent: null,
+    categories: [],
+  });
+  const [isLoadingCategoryStats, setIsLoadingCategoryStats] = useState(true);
 
   const fetchRecentReceipts = useCallback(async () => {
     setIsLoadingRecentReceipts(true);
@@ -329,6 +372,78 @@ export default function DashboardClient() {
     };
 
     void fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchCategoryStats = async () => {
+      try {
+        setIsLoadingCategoryStats(true);
+        const authToken = getAuthTokenFromCookie();
+        const response = await fetch("/api/receipts/me/stats/by-category", {
+          method: "GET",
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+          credentials: "include",
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        const payloadObject = toObject(payload);
+
+        if (!response.ok || !payloadObject) {
+          throw new Error("Failed to load category stats.");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const categoriesRaw = Array.isArray(payloadObject.categories) ? payloadObject.categories : [];
+        const categories = categoriesRaw
+          .map((item) => {
+            const itemObject = toObject(item);
+            if (!itemObject) {
+              return null;
+            }
+            const category =
+              typeof itemObject.category === "string" && itemObject.category.trim()
+                ? itemObject.category.trim()
+                : "Other";
+            const amount = toNumber(itemObject.amount) ?? 0;
+            return { category, amount };
+          })
+          .filter((item): item is CategoryStat => item !== null && item.amount > 0);
+
+        setCategoryStats({
+          currency:
+            typeof payloadObject.currency === "string" && payloadObject.currency.trim()
+              ? payloadObject.currency.trim()
+              : "USD",
+          totalSpent: toNumber(payloadObject.totalSpent),
+          categories,
+        });
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setCategoryStats({
+          currency: "USD",
+          totalSpent: null,
+          categories: [],
+        });
+      } finally {
+        if (!isMounted) {
+          return;
+        }
+        setIsLoadingCategoryStats(false);
+      }
+    };
+
+    void fetchCategoryStats();
 
     return () => {
       isMounted = false;
@@ -499,6 +614,27 @@ export default function DashboardClient() {
   const isNavigableReceipt = (receipt: Receipt) =>
     Boolean(receipt.id) && !["loading", "error", "empty"].includes(receipt.id);
 
+  const donutStyle = useMemo(() => {
+    const total =
+      categoryStats.totalSpent !== null
+        ? categoryStats.totalSpent
+        : categoryStats.categories.reduce((sum, item) => sum + item.amount, 0);
+
+    if (total <= 0 || categoryStats.categories.length === 0) {
+      return { background: "conic-gradient(#dfe7fb 0 100%)" };
+    }
+
+    let current = 0;
+    const segments = categoryStats.categories.map((item, index) => {
+      const start = current;
+      current += (item.amount / total) * 100;
+      const color = CATEGORY_COLOR_PALETTE[index % CATEGORY_COLOR_PALETTE.length];
+      return `${color} ${start}% ${Math.min(current, 100)}%`;
+    });
+
+    return { background: `conic-gradient(${segments.join(", ")})` };
+  }, [categoryStats]);
+
   const handleLogout = () => {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
@@ -559,9 +695,33 @@ export default function DashboardClient() {
         <section className={styles.chartCard}>
           <div className={styles.chartHeader}>Spending by Category</div>
           <div className={styles.chartBody}>
-            <div className={styles.donut} />
-            <div className={styles.lineChart}>
-              <div className={styles.line} />
+            <div className={styles.donut} style={donutStyle} />
+            <div className={styles.donutLabels}>
+              {isLoadingCategoryStats && <span>Loading categories...</span>}
+              {!isLoadingCategoryStats && categoryStats.categories.length === 0 && (
+                <span>No category data</span>
+              )}
+              {!isLoadingCategoryStats &&
+                categoryStats.categories.map((item, index) => {
+                  const color = CATEGORY_COLOR_PALETTE[index % CATEGORY_COLOR_PALETTE.length];
+                  return (
+                    <span key={`${item.category}-${index}`}>
+                      <i
+                        style={{
+                          display: "inline-block",
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: color,
+                          marginRight: 6,
+                          verticalAlign: "middle",
+                        }}
+                      />
+                      {item.category}:{" "}
+                      {formatAmountWithCurrency(item.amount, categoryStats.currency)}
+                    </span>
+                  );
+                })}
             </div>
           </div>
         </section>

@@ -18,6 +18,7 @@ type ReceiptDetail = {
   merchantName: string;
   receiptDate: string;
   currency: string;
+  category: string;
   imageId: number | null;
   imageUrl: string;
   reviewed: boolean | null;
@@ -39,11 +40,26 @@ type EditableReceipt = {
   merchantName: string;
   receiptDate: string;
   currency: string;
+  category: string;
   subtotal: string;
   tax: string;
   total: string;
   items: EditableItem[];
 };
+
+const CATEGORY_OPTIONS = [
+  "Housing",
+  "Utilities",
+  "Food",
+  "Transportation",
+  "Shopping",
+  "Health",
+  "Entertainment",
+  "Subscriptions",
+  "Travel",
+  "Education",
+  "Other",
+] as const;
 
 function toObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -146,6 +162,7 @@ function buildReceiptDetail(payloadObject: Record<string, unknown>): ReceiptDeta
     merchantName: toString(payloadObject.merchantName) || "Unknown Merchant",
     receiptDate: toString(payloadObject.receiptDate),
     currency: toString(payloadObject.currency),
+    category: toString(payloadObject.category),
     imageId,
     imageUrl: toString(payloadObject.imageUrl),
     reviewed: toBoolean(payloadObject.reviewed),
@@ -160,7 +177,8 @@ function buildEditableReceipt(source: ReceiptDetail): EditableReceipt {
   return {
     merchantName: source.merchantName,
     receiptDate: toDateInputValue(source.receiptDate),
-    currency: source.currency,
+    currency: source.currency || "USD",
+    category: source.category || "Other",
     subtotal: source.subtotal === null ? "" : String(source.subtotal),
     tax: source.tax === null ? "" : String(source.tax),
     total: source.total === null ? "" : String(source.total),
@@ -186,7 +204,10 @@ function isReceiptEdited(detail: ReceiptDetail, editDetail: EditableReceipt) {
   if (toDateInputValue(detail.receiptDate) !== editDetail.receiptDate) {
     return true;
   }
-  if ((detail.currency || "") !== editDetail.currency.trim()) {
+  if ((detail.currency || "USD") !== (editDetail.currency.trim() || "USD")) {
+    return true;
+  }
+  if ((detail.category || "Other") !== (editDetail.category.trim() || "Other")) {
     return true;
   }
   if (detail.subtotal !== toComparableNumber(editDetail.subtotal)) {
@@ -445,7 +466,8 @@ export default function ReceiptDetailPage() {
       const payload = {
         merchantName: editDetail.merchantName.trim(),
         receiptDate: editDetail.receiptDate,
-        currency: editDetail.currency.trim(),
+        currency: editDetail.currency.trim() || "USD",
+        category: editDetail.category.trim() || "Other",
         subtotal: toNumber(editDetail.subtotal),
         tax: toNumber(editDetail.tax),
         total: toNumber(editDetail.total),
@@ -725,7 +747,7 @@ export default function ReceiptDetailPage() {
                 {isEditing ? (
                   <select
                     className={styles.detailInput}
-                    value={editDetail?.currency ?? "USD"}
+                    value={editDetail?.currency || "USD"}
                     onChange={(event) =>
                       setEditDetail((current) =>
                         current ? { ...current, currency: event.target.value } : current
@@ -736,6 +758,28 @@ export default function ReceiptDetailPage() {
                   </select>
                 ) : (
                   <span>{detail.currency || "--"}</span>
+                )}
+              </div>
+              <div className={styles.detailRow}>
+                <span>Category</span>
+                {isEditing ? (
+                  <select
+                    className={styles.detailInput}
+                    value={editDetail?.category || "Other"}
+                    onChange={(event) =>
+                      setEditDetail((current) =>
+                        current ? { ...current, category: event.target.value } : current
+                      )
+                    }
+                  >
+                    {CATEGORY_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{detail.category || "--"}</span>
                 )}
               </div>
               <div className={styles.detailRow}>
