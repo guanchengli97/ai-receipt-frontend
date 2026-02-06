@@ -10,7 +10,7 @@
   width: min(420px, 100%);
   background: #f7f9ff;
   border-radius: 28px;
-  padding: 18px 16px 22px;
+  padding: 18px 16px 110px;
   box-shadow: 0 24px 60px rgba(28, 53, 109, 0.18);
   border: 1px solid rgba(214, 223, 240, 0.8);
   display: flex;
@@ -267,12 +267,21 @@
 }
 
 .bottomNav {
-  margin-top: auto;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 40px;
+  width: min(420px, calc(100vw - 36px));
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   align-items: center;
   gap: 10px;
-  padding-top: 16px;
+  padding: 10px 16px;
+  background: #f7f9ff;
+  border: 1px solid #e4eaf6;
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(35, 58, 106, 0.12);
+  z-index: 20;
 }
 
 .navItem {
@@ -327,6 +336,11 @@
 @media (max-width: 480px) {
   .phone {
     border-radius: 24px;
-    padding: 16px 14px 20px;
+    padding: 16px 14px 104px;
+  }
+
+  .bottomNav {
+    width: calc(100vw - 36px);
+    padding: 10px 14px;
   }
 }

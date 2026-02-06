@@ -204,7 +204,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  padding: 0 16px;
+  padding: 10px 16px;
   z-index: 20;
 }
 
@@ -269,6 +269,6 @@
 
   .actions {
     width: calc(100vw - 36px);
-    padding: 0 14px;
+    padding: 10px 14px;
   }
 }
