@@ -963,27 +963,31 @@ export default function ReceiptDetailPage() {
               <p className={styles.saveMessage}>{saveMessage}</p>
             )}
 
-            <button
-              className={styles.reviewButton}
-              type="button"
-              onClick={handleReviewToggle}
-              disabled={reviewStatus === "saving"}
-            >
-              {detail.reviewed ? "Mark as Unreviewed" : "Mark as Reviewed"}
-            </button>
-            {reviewMessage && (
-              <p className={styles.reviewMessage}>{reviewMessage}</p>
-            )}
+            {!isEditing && (
+              <>
+                <button
+                  className={styles.reviewButton}
+                  type="button"
+                  onClick={handleReviewToggle}
+                  disabled={reviewStatus === "saving"}
+                >
+                  {detail.reviewed ? "Mark as Unreviewed" : "Mark as Reviewed"}
+                </button>
+                {reviewMessage && (
+                  <p className={styles.reviewMessage}>{reviewMessage}</p>
+                )}
 
-            <button
-              className={styles.deleteButton}
-              type="button"
-              onClick={handleDeleteReceipt}
-              disabled={deleteStatus === "deleting"}
-            >
-              {deleteStatus === "deleting" ? "Deleting..." : "Delete Receipt"}
-            </button>
-            {deleteMessage && <p className={styles.deleteMessage}>{deleteMessage}</p>}
+                <button
+                  className={styles.deleteButton}
+                  type="button"
+                  onClick={handleDeleteReceipt}
+                  disabled={deleteStatus === "deleting"}
+                >
+                  {deleteStatus === "deleting" ? "Deleting..." : "Delete Receipt"}
+                </button>
+                {deleteMessage && <p className={styles.deleteMessage}>{deleteMessage}</p>}
+              </>
+            )}
 
             <section className={styles.card}>
               <h3>Attachment</h3>

@@ -140,7 +140,12 @@
 .chartHeader {
   font-size: 14px;
   font-weight: 700;
-  margin-bottom: 12px;
+}
+
+.chartSubheader {
+  font-size: 12px;
+  color: #7c8cb0;
+  margin: 4px 0 12px;
 }
 
 .chartBody {

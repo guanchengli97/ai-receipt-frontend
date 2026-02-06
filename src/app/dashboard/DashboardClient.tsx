@@ -117,6 +117,8 @@ type CategoryStat = {
 type SpendingByCategoryStats = {
   currency: string;
   totalSpent: number | null;
+  monthStart: string;
+  monthEnd: string;
   categories: CategoryStat[];
 };
 
@@ -268,6 +270,20 @@ function formatDate(date: string | null) {
   return dateOnly || trimmed;
 }
 
+function formatMonthDate(value: string) {
+  if (!value) {
+    return "";
+  }
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(parsed));
+}
+
 function getAuthTokenFromCookie() {
   if (typeof document === "undefined") {
     return "";
@@ -291,6 +307,8 @@ export default function DashboardClient() {
   const [categoryStats, setCategoryStats] = useState<SpendingByCategoryStats>({
     currency: "USD",
     totalSpent: null,
+    monthStart: "",
+    monthEnd: "",
     categories: [],
   });
   const [isLoadingCategoryStats, setIsLoadingCategoryStats] = useState(true);
@@ -424,6 +442,9 @@ export default function DashboardClient() {
               ? payloadObject.currency.trim()
               : "USD",
           totalSpent: toNumber(payloadObject.totalSpent),
+          monthStart:
+            typeof payloadObject.monthStart === "string" ? payloadObject.monthStart : "",
+          monthEnd: typeof payloadObject.monthEnd === "string" ? payloadObject.monthEnd : "",
           categories,
         });
       } catch {
@@ -433,6 +454,8 @@ export default function DashboardClient() {
         setCategoryStats({
           currency: "USD",
           totalSpent: null,
+          monthStart: "",
+          monthEnd: "",
           categories: [],
         });
       } finally {
@@ -635,6 +658,15 @@ export default function DashboardClient() {
     return { background: `conic-gradient(${segments.join(", ")})` };
   }, [categoryStats]);
 
+  const categoryPeriodText = useMemo(() => {
+    const start = formatMonthDate(categoryStats.monthStart);
+    const end = formatMonthDate(categoryStats.monthEnd);
+    if (start && end) {
+      return `This Month (${start} - ${end})`;
+    }
+    return "This Month";
+  }, [categoryStats.monthEnd, categoryStats.monthStart]);
+
   const handleLogout = () => {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
@@ -694,6 +726,7 @@ export default function DashboardClient() {
 
         <section className={styles.chartCard}>
           <div className={styles.chartHeader}>Spending by Category</div>
+          <div className={styles.chartSubheader}>{categoryPeriodText}</div>
           <div className={styles.chartBody}>
             <div className={styles.donut} style={donutStyle} />
             <div className={styles.donutLabels}>
