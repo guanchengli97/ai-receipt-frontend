@@ -20,7 +20,7 @@
 
 .header {
   display: grid;
-  grid-template-columns: 36px 1fr 36px;
+  grid-template-columns: 36px 1fr auto;
   align-items: center;
   margin-bottom: 14px;
 }
@@ -46,10 +46,20 @@
 }
 
 .action {
+  border: none;
+  background: #edf3ff;
+  border-radius: 999px;
+  padding: 8px 12px;
   justify-self: end;
   font-size: 14px;
   color: #5b7fe3;
   font-weight: 600;
+  cursor: pointer;
+}
+
+.action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .hero {
@@ -96,6 +106,18 @@
   margin-bottom: 12px;
 }
 
+.status[data-state="success"] {
+  color: #1c7a4b;
+  border-color: #bde8d0;
+  background: #f1fbf5;
+}
+
+.status[data-state="error"] {
+  color: #c44343;
+  border-color: #f1caca;
+  background: #fff4f4;
+}
+
 .identity {
   text-align: center;
   margin-bottom: 12px;
@@ -139,6 +161,36 @@
   color: #1d2944;
   font-weight: 600;
   text-align: right;
+}
+
+.input,
+.select {
+  border: 1px solid #d8e3f9;
+  background: #ffffff;
+  color: #1d2944;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  width: min(180px, 100%);
+  text-align: right;
+}
+
+.input:focus,
+.select:focus {
+  outline: 2px solid rgba(91, 127, 227, 0.2);
+  border-color: #6f95f8;
+}
+
+.cancel {
+  border: none;
+  background: #eff3fb;
+  color: #556485;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  margin-bottom: 10px;
 }
 
 .logout {

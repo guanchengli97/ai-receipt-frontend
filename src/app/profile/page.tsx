@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -33,21 +33,6 @@ function toBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
 }
 
-function formatDate(value: string) {
-  if (!value) {
-    return "--";
-  }
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return value;
-  }
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(parsed));
-}
-
 function getAuthTokenFromCookie() {
   if (typeof document === "undefined") {
     return "";
@@ -59,6 +44,11 @@ function getAuthTokenFromCookie() {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
+  const [isEditing, setIsEditing] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [currencyInput, setCurrencyInput] = useState("$");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error" | "success">("idle");
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -122,6 +112,83 @@ export default function ProfilePage() {
     window.location.href = "/login";
   };
 
+  const handleStartEdit = () => {
+    if (!profile) {
+      return;
+    }
+    setUsernameInput(profile.username || "");
+    setCurrencyInput(profile.currency || "$");
+    setSaveStatus("idle");
+    setSaveMessage("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setSaveStatus("idle");
+    setSaveMessage("");
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profile) {
+      return;
+    }
+
+    const nextUsername = usernameInput.trim();
+    const nextCurrency = currencyInput.trim() || "USD";
+
+    if (!nextUsername) {
+      setSaveStatus("error");
+      setSaveMessage("Username is required.");
+      return;
+    }
+
+    try {
+      setSaveStatus("saving");
+      setSaveMessage("");
+
+      const authToken = getAuthTokenFromCookie();
+      const response = await fetch("/api/users/me", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          username: nextUsername,
+          currency: nextCurrency,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      const payloadObject = toObject(payload);
+
+      if (!response.ok || !payloadObject) {
+        const message =
+          typeof payloadObject?.message === "string" && payloadObject.message.trim()
+            ? payloadObject.message
+            : "Failed to update profile.";
+        throw new Error(message);
+      }
+
+      setProfile({
+        id: toNumber(payloadObject.id),
+        username: toString(payloadObject.username),
+        email: toString(payloadObject.email),
+        currency: toString(payloadObject.currency),
+        isActive: toBoolean(payloadObject.isActive),
+        createdAt: toString(payloadObject.createdAt),
+        updatedAt: toString(payloadObject.updatedAt),
+      });
+      setIsEditing(false);
+      setSaveStatus("success");
+      setSaveMessage("Profile updated.");
+    } catch (error) {
+      setSaveStatus("error");
+      setSaveMessage(error instanceof Error ? error.message : "Failed to update profile.");
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.phone}>
@@ -130,7 +197,20 @@ export default function ProfilePage() {
             ←
           </Link>
           <h1 className={styles.title}>Profile</h1>
-          {/* <span className={styles.action}>Save</span> */}
+          {!isEditing ? (
+            <button
+              className={styles.action}
+              type="button"
+              onClick={handleStartEdit}
+              disabled={status !== "success" || !profile}
+            >
+              Edit
+            </button>
+          ) : (
+            <button className={styles.action} type="button" onClick={handleSaveProfile}>
+              {saveStatus === "saving" ? "Saving..." : "Save"}
+            </button>
+          )}
         </header>
 
         <section className={styles.hero}>
@@ -144,6 +224,11 @@ export default function ProfilePage() {
         {status === "error" && (
           <div className={styles.status}>Failed to load profile. Please try again.</div>
         )}
+        {saveMessage && (
+          <div className={styles.status} data-state={saveStatus}>
+            {saveMessage}
+          </div>
+        )}
 
         {status === "success" && profile && (
           <>
@@ -155,7 +240,18 @@ export default function ProfilePage() {
             <section className={styles.list}>
               <div className={styles.listItem}>
                 <span className={styles.label}>Full Name</span>
-                <span className={styles.value}>{profile.username || "--"}</span>
+                {isEditing ? (
+                  <input
+                    className={styles.input}
+                    type="text"
+                    value={usernameInput}
+                    onChange={(event) => setUsernameInput(event.target.value)}
+                    placeholder="Enter username"
+                    maxLength={60}
+                  />
+                ) : (
+                  <span className={styles.value}>{profile.username || "--"}</span>
+                )}
               </div>
               <div className={styles.listItem}>
                 <span className={styles.label}>Email</span>
@@ -163,23 +259,25 @@ export default function ProfilePage() {
               </div>
               <div className={styles.listItem}>
                 <span className={styles.label}>Currency</span>
-                <span className={styles.value}>{profile.currency || "--"}</span>
+                {isEditing ? (
+                  <select
+                    className={styles.select}
+                    value={currencyInput}
+                    onChange={(event) => setCurrencyInput(event.target.value)}
+                  >
+                    <option value="$">USD</option>
+                  </select>
+                ) : (
+                  <span className={styles.value}>{profile.currency || "--"}</span>
+                )}
               </div>
-              {/* <div className={styles.listItem}>
-                <span className={styles.label}>Status</span>
-                <span className={styles.value}>
-                  {profile.isActive === null ? "--" : profile.isActive ? "Active" : "Inactive"}
-                </span>
-              </div>
-              <div className={styles.listItem}>
-                <span className={styles.label}>Created</span>
-                <span className={styles.value}>{formatDate(profile.createdAt)}</span>
-              </div>
-              <div className={styles.listItem}>
-                <span className={styles.label}>Updated</span>
-                <span className={styles.value}>{formatDate(profile.updatedAt)}</span>
-              </div> */}
             </section>
+
+            {isEditing && (
+              <button className={styles.cancel} type="button" onClick={handleCancelEdit}>
+                Cancel
+              </button>
+            )}
 
             <button className={styles.logout} type="button" onClick={handleLogout}>
               Log Out
@@ -190,3 +288,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
