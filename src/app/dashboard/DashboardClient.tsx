@@ -807,7 +807,12 @@ export default function DashboardClient() {
               );
 
               return isNavigableReceipt(receipt) ? (
-                <Link className={styles.listItem} href={`/receipts/${receipt.id}`} key={receipt.id}>
+                <Link
+                  className={styles.listItem}
+                  href={`/receipts/${receipt.id}`}
+                  prefetch
+                  key={receipt.id}
+                >
                   {content}
                 </Link>
               ) : (

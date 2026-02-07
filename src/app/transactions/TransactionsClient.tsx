@@ -560,6 +560,7 @@ export default function TransactionsClient() {
                           <Link
                             className={styles.rowText}
                             href={`/receipts/${item.id}?from=transactions&tab=${tab}`}
+                            prefetch
                           >
                             <span className={styles.merchant}>{item.merchant}</span>
                             <span className={styles.meta}>
