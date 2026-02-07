@@ -193,7 +193,7 @@ export default function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.phone}>
         <header className={styles.header}>
-          <Link className={styles.back} href="/dashboard" aria-label="Back to dashboard">
+          <Link className={styles.back} href="/dashboard" prefetch aria-label="Back to dashboard">
             ←
           </Link>
           <h1 className={styles.title}>Profile</h1>
@@ -288,4 +288,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

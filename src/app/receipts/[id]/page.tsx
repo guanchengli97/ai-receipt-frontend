@@ -659,7 +659,7 @@ export default function ReceiptDetailPage() {
     <div className={styles.page}>
       <div className={styles.phone}>
         <header className={styles.header}>
-          <Link className={styles.back} href={backHref} aria-label="Back">
+          <Link className={styles.back} href={backHref} prefetch aria-label="Back">
             ←
           </Link>
           <div className={styles.headerMain}>

@@ -710,7 +710,7 @@ export default function DashboardClient() {
             {/* <button className={styles.iconButton} type="button">
               <IconBell />
             </button> */}
-            <Link className={styles.avatar} href="/profile" aria-label="Open profile">
+            <Link className={styles.avatar} href="/profile" prefetch aria-label="Open profile">
               {userInitials}
             </Link>
           </div>
@@ -849,7 +849,7 @@ export default function DashboardClient() {
               onChange={handleFileSelect}
             />
           </div>
-          <Link className={styles.navItem} href="/transactions">
+          <Link className={styles.navItem} href="/transactions" prefetch>
             <IconLock />
             Transactions
           </Link>
