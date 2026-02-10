@@ -11,6 +11,7 @@ cp .env.example .env.local
 2) Configure backend proxy target:
 
 - `AIRECEIPT_BACKEND_ORIGIN=http://localhost:8080`
+- `NEXT_PUBLIC_GOOGLE_AUTH_PATH=/api/auth/google` (Google OAuth start endpoint; frontend redirects here from `/login`)
 
 3) Configure S3 upload for dashboard camera flow:
 

@@ -89,8 +89,32 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    const maxAge = 60 * 60 * 24 * 7;
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    const searchParams = new URLSearchParams(window.location.search);
+    const callbackToken =
+      searchParams.get("token") ?? searchParams.get("auth_token");
+    const callbackError =
+      searchParams.get("error_description") ??
+      searchParams.get("error") ??
+      searchParams.get("message");
+
+    if (callbackToken) {
+      document.cookie = `auth_token=${callbackToken}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+      window.history.replaceState({}, "", "/login");
+      window.location.replace("/dashboard");
+      return;
+    }
+
+    if (callbackError) {
+      setStatus("error");
+      setMessage(decodeURIComponent(callbackError));
+      window.history.replaceState({}, "", "/login");
+      return;
+    }
+
     const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
-    if (match && match[1]) {
+    if (match?.[1]) {
       window.location.replace("/dashboard");
     }
   }, []);
@@ -129,6 +153,17 @@ export default function LoginPage() {
           : "Login failed. Please try again."
       );
     }
+  };
+
+  const handleGoogleLogin = () => {
+    setStatus("loading");
+    setMessage("Redirecting to Google...");
+    const basePath = process.env.NEXT_PUBLIC_GOOGLE_AUTH_PATH || "/api/auth/google";
+    const callbackUrl = `${window.location.origin}/login`;
+    const separator = basePath.includes("?") ? "&" : "?";
+    window.location.href = `${basePath}${separator}redirect_uri=${encodeURIComponent(
+      callbackUrl
+    )}`;
   };
 
   return (
@@ -213,7 +248,12 @@ export default function LoginPage() {
         <div className={styles.divider}>Or sign in with</div>
 
         <div className={`${styles.form} ${styles.stagger}`}>
-          <button className={styles.socialButton} type="button">
+          <button
+            className={styles.socialButton}
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={status === "loading"}
+          >
             <IconGoogle />
             Continue with Google
           </button>
