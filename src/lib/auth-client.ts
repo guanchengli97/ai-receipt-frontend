@@ -35,7 +35,7 @@ export function logoutAndRedirect() {
 }
 
 export function handleUnauthorizedResponse(response: Response) {
-  if (response.status !== 401) {
+  if (response.status !== 401 && response.status !== 403) {
     return false;
   }
   logoutAndRedirect();
