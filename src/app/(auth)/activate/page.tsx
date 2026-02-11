@@ -35,7 +35,7 @@ export default function ActivatePage() {
         }
 
         setStatus("success");
-        setMessage(data?.message || "Email activated successfully. You can now login.");
+        setMessage("Email activated successfully. You can now log in.");
         timeoutRef.current = window.setTimeout(() => {
           window.location.href = "/login";
         }, 1500);
@@ -104,7 +104,7 @@ export default function ActivatePage() {
 
           {status === "error" && (
             <Link className={styles.primaryButton} href="/register">
-              重新注册 / 重发邮件
+              Register Again / Resend Email
             </Link>
           )}
         </div>
@@ -112,3 +112,4 @@ export default function ActivatePage() {
     </div>
   );
 }
+

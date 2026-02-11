@@ -161,10 +161,12 @@ export default function RegisterPage() {
       }
 
       setStatus("success");
-      setMessage("Registration successful!");
+      setMessage(
+        "Registration successful. Please check your email and activate your account before logging in."
+      );
       setTimeout(() => {
         window.location.href = "/login";
-      }, 1200);
+      }, 1800);
     } catch (error) {
       setStatus("error");
       setMessage(
