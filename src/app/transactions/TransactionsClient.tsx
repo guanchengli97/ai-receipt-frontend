@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { authFetch } from "../../lib/auth-client";
 import styles from "./page.module.css";
 
 type Transaction = {
@@ -142,14 +143,6 @@ function formatAmount(amount: number | null) {
   }).format(amount);
 }
 
-function getAuthTokenFromCookie() {
-  if (typeof document === "undefined") {
-    return "";
-  }
-  const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
-}
-
 function getDateLabel(value: string | null) {
   if (!value) {
     return "--";
@@ -248,20 +241,13 @@ export default function TransactionsClient() {
     const fetchData = async () => {
       try {
         setStatus("loading");
-        const authToken = getAuthTokenFromCookie();
-        const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
-
         const [receiptsResponse, statsResponse] = await Promise.all([
-          fetch("/api/receipts/me", {
+          authFetch("/api/receipts/me", {
             method: "GET",
-            headers,
-            credentials: "include",
             cache: "no-store",
           }),
-          fetch("/api/receipts/me/stats", {
+          authFetch("/api/receipts/me/stats", {
             method: "GET",
-            headers,
-            credentials: "include",
             cache: "no-store",
           }),
         ]);
@@ -366,14 +352,11 @@ export default function TransactionsClient() {
         setBulkDeleteStatus("deleting");
         setBulkDeleteMessage("");
 
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch("/api/receipts", {
+        const response = await authFetch("/api/receipts", {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
-          credentials: "include",
           cache: "no-store",
           body: JSON.stringify({ ids: parsedIds }),
         });

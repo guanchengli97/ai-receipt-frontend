@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { authFetch, logoutAndRedirect } from "../../lib/auth-client";
 import styles from "./page.module.css";
 
 const IconBell = () => (
@@ -300,14 +301,6 @@ function formatMonthDate(value: string) {
   }).format(new Date(parsed));
 }
 
-function getAuthTokenFromCookie() {
-  if (typeof document === "undefined") {
-    return "";
-  }
-  const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
-}
-
 export default function DashboardClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userInitials, setUserInitials] = useState("U");
@@ -334,11 +327,8 @@ export default function DashboardClient() {
     setRecentReceiptsError("");
 
     try {
-      const authToken = getAuthTokenFromCookie();
-      const response = await fetch("/api/receipts/me", {
+      const response = await authFetch("/api/receipts/me", {
         method: "GET",
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-        credentials: "include",
         cache: "no-store",
       });
       const payload = await response.json().catch(() => null);
@@ -372,11 +362,8 @@ export default function DashboardClient() {
 
     const fetchStats = async () => {
       try {
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch("/api/receipts/me/stats", {
+        const response = await authFetch("/api/receipts/me/stats", {
           method: "GET",
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-          credentials: "include",
           cache: "no-store",
         });
         const payload = await response.json().catch(() => null);
@@ -418,11 +405,8 @@ export default function DashboardClient() {
     const fetchCategoryStats = async () => {
       try {
         setIsLoadingCategoryStats(true);
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch("/api/receipts/me/stats/by-category", {
+        const response = await authFetch("/api/receipts/me/stats/by-category", {
           method: "GET",
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-          credentials: "include",
           cache: "no-store",
         });
         const payload = await response.json().catch(() => null);
@@ -494,11 +478,8 @@ export default function DashboardClient() {
 
     const fetchUserProfile = async () => {
       try {
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch("/api/users/me", {
+        const response = await authFetch("/api/users/me", {
           method: "GET",
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-          credentials: "include",
           cache: "no-store",
         });
         const payload = await response.json().catch(() => null);
@@ -555,14 +536,11 @@ export default function DashboardClient() {
       setUploadState("uploading");
       setUploadMessage("Preparing direct upload...");
 
-      const authToken = getAuthTokenFromCookie();
-      const presignResponse = await fetch("/api/images/upload-url", {
+      const presignResponse = await authFetch("/api/images/upload-url", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        credentials: "include",
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type || "image/jpeg",
@@ -607,13 +585,11 @@ export default function DashboardClient() {
       setUploadState("parsing");
       setUploadMessage("Image uploaded. Parsing receipt...");
 
-      const parseResponse = await fetch("/api/receipts/parse", {
+      const parseResponse = await authFetch("/api/receipts/parse", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        credentials: "include",
         body: JSON.stringify({
           imageId: typeof imageId === "number" ? imageId : imageId.trim(),
           objectKey: objectKey.trim(),
@@ -683,12 +659,6 @@ export default function DashboardClient() {
     return "This Month";
   }, [categoryStats.monthEnd, categoryStats.monthStart]);
 
-  const handleLogout = () => {
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
-    window.location.href = "/login";
-  };
-
   return (
     <div className={styles.page}>
       <div className={styles.phone}>
@@ -701,7 +671,7 @@ export default function DashboardClient() {
             <button
               className={styles.logoutIcon}
               type="button"
-              onClick={handleLogout}
+              onClick={logoutAndRedirect}
               aria-label="Log out"
               title="Log out"
             >

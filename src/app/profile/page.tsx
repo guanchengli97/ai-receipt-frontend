@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { authFetch, logoutAndRedirect } from "../../lib/auth-client";
 import styles from "./page.module.css";
 
 type UserProfile = {
@@ -33,14 +34,6 @@ function toBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
 }
 
-function getAuthTokenFromCookie() {
-  if (typeof document === "undefined") {
-    return "";
-  }
-  const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
-}
-
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
@@ -55,11 +48,8 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch("/api/users/me", {
+        const response = await authFetch("/api/users/me", {
           method: "GET",
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-          credentials: "include",
           cache: "no-store",
         });
         const payload = await response.json().catch(() => null);
@@ -106,12 +96,6 @@ export default function ProfilePage() {
     return `${first}${second}`.toUpperCase();
   }, [profile]);
 
-  const handleLogout = () => {
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = `auth_token=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
-    window.location.href = "/login";
-  };
-
   const handleStartEdit = () => {
     if (!profile) {
       return;
@@ -147,14 +131,11 @@ export default function ProfilePage() {
       setSaveStatus("saving");
       setSaveMessage("");
 
-      const authToken = getAuthTokenFromCookie();
-      const response = await fetch("/api/users/me", {
+      const response = await authFetch("/api/users/me", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        credentials: "include",
         body: JSON.stringify({
           username: nextUsername,
           currency: nextCurrency,
@@ -279,7 +260,7 @@ export default function ProfilePage() {
               </button>
             )}
 
-            <button className={styles.logout} type="button" onClick={handleLogout}>
+            <button className={styles.logout} type="button" onClick={logoutAndRedirect}>
               Log Out
             </button>
           </>

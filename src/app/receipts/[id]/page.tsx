@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { authFetch } from "../../../lib/auth-client";
 import styles from "./page.module.css";
 
 type ReceiptItem = {
@@ -122,14 +123,6 @@ function toDateInputValue(value: string) {
     return value;
   }
   return new Date(parsed).toISOString().slice(0, 10);
-}
-
-function getAuthTokenFromCookie() {
-  if (typeof document === "undefined") {
-    return "";
-  }
-  const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
 }
 
 function buildReceiptDetail(payloadObject: Record<string, unknown>): ReceiptDetail {
@@ -282,11 +275,8 @@ export default function ReceiptDetailPage() {
         if (!receiptId) {
           throw new Error("Missing receipt id.");
         }
-        const authToken = getAuthTokenFromCookie();
-        const response = await fetch(`/api/receipts/${receiptId}`, {
+        const response = await authFetch(`/api/receipts/${receiptId}`, {
           method: "GET",
-          headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-          credentials: "include",
           cache: "no-store",
         });
         const payload = await response.json().catch(() => null);
@@ -326,11 +316,8 @@ export default function ReceiptDetailPage() {
   }, [receiptId]);
 
   const fetchPresignedUrl = async (imageId: number) => {
-    const authToken = getAuthTokenFromCookie();
-    const response = await fetch(`/api/images/${imageId}/presigned-url`, {
+    const response = await authFetch(`/api/images/${imageId}/presigned-url`, {
       method: "GET",
-      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-      credentials: "include",
       cache: "no-store",
     });
     const payload = await response.json().catch(() => null);
@@ -414,14 +401,11 @@ export default function ReceiptDetailPage() {
       setReviewStatus("saving");
       setReviewMessage("");
 
-      const authToken = getAuthTokenFromCookie();
-      const response = await fetch(`/api/receipts/${detail.receiptId}/review`, {
+      const response = await authFetch(`/api/receipts/${detail.receiptId}/review`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        credentials: "include",
         cache: "no-store",
         body: JSON.stringify({ reviewed: !detail.reviewed }),
       });
@@ -479,14 +463,11 @@ export default function ReceiptDetailPage() {
         })),
       };
 
-      const authToken = getAuthTokenFromCookie();
-      const response = await fetch(`/api/receipts/${detail.receiptId}`, {
+      const response = await authFetch(`/api/receipts/${detail.receiptId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        credentials: "include",
         cache: "no-store",
         body: JSON.stringify(payload),
       });
@@ -623,11 +604,8 @@ export default function ReceiptDetailPage() {
       setDeleteStatus("deleting");
       setDeleteMessage("");
 
-      const authToken = getAuthTokenFromCookie();
-      const response = await fetch(`/api/receipts/${detail.receiptId}`, {
+      const response = await authFetch(`/api/receipts/${detail.receiptId}`, {
         method: "DELETE",
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
-        credentials: "include",
         cache: "no-store",
       });
       const payload = await response.json().catch(() => null);
