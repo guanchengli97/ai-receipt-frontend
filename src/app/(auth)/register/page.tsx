@@ -267,8 +267,8 @@ export default function RegisterPage() {
               onChange={(event) => setAgree(event.target.checked)}
             />
             <span>
-              I agree to the <Link href="#">Terms</Link> &amp;{" "}
-              <Link href="#">Privacy Policy</Link>
+              I agree to the <Link href="/terms">Terms</Link> &amp;{" "}
+              <Link href="/privacy">Privacy Policy</Link>
             </span>
           </label>
 

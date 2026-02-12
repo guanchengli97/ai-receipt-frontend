@@ -264,7 +264,8 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.footer}>
-          By continuing, you agree to our Terms &amp; Privacy Policy.
+          By continuing, you agree to our <Link href="/terms">Terms</Link> &amp;{" "}
+          <Link href="/privacy">Privacy Policy</Link>.
         </div>
       </div>
     </div>
