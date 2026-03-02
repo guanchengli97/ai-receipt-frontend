@@ -80,6 +80,28 @@ const IconApple = () => (
   </svg>
 );
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void;
+          }) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
+function setAuthCookie(token: string) {
+  const maxAge = 60 * 60 * 24 * 7;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `auth_token=${token}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,10 +109,10 @@ export default function LoginPage() {
     "idle"
   );
   const [message, setMessage] = useState("");
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
   useEffect(() => {
-    const maxAge = 60 * 60 * 24 * 7;
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
     const searchParams = new URLSearchParams(window.location.search);
     const callbackToken =
       searchParams.get("token") ?? searchParams.get("auth_token");
@@ -100,7 +122,7 @@ export default function LoginPage() {
       searchParams.get("message");
 
     if (callbackToken) {
-      document.cookie = `auth_token=${callbackToken}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+      setAuthCookie(callbackToken);
       window.history.replaceState({}, "", "/login");
       window.location.replace("/dashboard");
       return;
@@ -118,6 +140,95 @@ export default function LoginPage() {
       window.location.replace("/dashboard");
     }
   }, []);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    const handleGoogleCredential = async (idToken: string) => {
+      setStatus("loading");
+      setMessage("Signing in with Google...");
+
+      try {
+        const response = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(data?.message || "Google login failed. Please try again.");
+        }
+
+        const token = data?.token;
+        if (!token) {
+          throw new Error("Google login succeeded but token is missing.");
+        }
+
+        setAuthCookie(token);
+        setStatus("success");
+        setMessage("Logged in successfully. Redirecting...");
+        window.location.href = "/dashboard";
+      } catch (error) {
+        setStatus("error");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Google login failed. Please try again."
+        );
+      }
+    };
+
+    const initializeGoogle = () => {
+      if (!window.google) {
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: ({ credential }) => {
+          if (!credential) {
+            setStatus("error");
+            setMessage("Google verification failed. Please try again.");
+            return;
+          }
+          void handleGoogleCredential(credential);
+        },
+      });
+      setGoogleReady(true);
+    };
+
+    if (window.google) {
+      initializeGoogle();
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    );
+    if (existingScript) {
+      existingScript.addEventListener("load", initializeGoogle);
+      return () => {
+        existingScript.removeEventListener("load", initializeGoogle);
+      };
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", initializeGoogle);
+    script.addEventListener("error", () => {
+      setStatus("error");
+      setMessage("Failed to load Google SDK. Please refresh and try again.");
+    });
+    document.head.appendChild(script);
+
+    return () => {
+      script.removeEventListener("load", initializeGoogle);
+    };
+  }, [googleClientId]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -137,9 +248,7 @@ export default function LoginPage() {
       }
 
       if (data?.token) {
-        const maxAge = 60 * 60 * 24 * 7;
-        const secure = window.location.protocol === "https:" ? "; Secure" : "";
-        document.cookie = `auth_token=${data.token}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+        setAuthCookie(data.token);
       }
 
       setStatus("success");
@@ -156,14 +265,19 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
+    if (!googleClientId) {
+      setStatus("error");
+      setMessage("Google login is not configured: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing.");
+      return;
+    }
+    if (!googleReady || !window.google) {
+      setStatus("error");
+      setMessage("Google SDK is not ready. Please wait a moment and retry.");
+      return;
+    }
     setStatus("loading");
-    setMessage("Redirecting to Google...");
-    const basePath = process.env.NEXT_PUBLIC_GOOGLE_AUTH_PATH || "/api/auth/google";
-    const callbackUrl = `${window.location.origin}/login`;
-    const separator = basePath.includes("?") ? "&" : "?";
-    window.location.href = `${basePath}${separator}redirect_uri=${encodeURIComponent(
-      callbackUrl
-    )}`;
+    setMessage("Waiting for Google verification...");
+    window.google.accounts.id.prompt();
   };
 
   return (
