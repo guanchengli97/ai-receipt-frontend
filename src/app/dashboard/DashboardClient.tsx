@@ -302,6 +302,7 @@ function formatMonthDate(value: string) {
 }
 
 export default function DashboardClient() {
+  const mockRemainingTodayCount = 12;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userInitials, setUserInitials] = useState("U");
   const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
@@ -706,6 +707,17 @@ export default function DashboardClient() {
             </div>
             <div className={styles.statIcon}>
               <IconLock />
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statInfo}>
+              <h3>Remaining Today</h3>
+              <p>{mockRemainingTodayCount}</p>
+              <span>Mock Data</span>
+            </div>
+            <div className={styles.statIcon}>
+              <IconBell />
             </div>
           </div>
         </section>
