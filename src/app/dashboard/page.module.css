@@ -97,6 +97,22 @@
   box-shadow: 0 12px 20px rgba(34, 58, 110, 0.08);
 }
 
+.statCardLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.statCardLink .statCard {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.statCardLink:hover .statCard {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(34, 58, 110, 0.12);
+}
+
 .statInfo h3 {
   margin: 0;
   font-size: 13px;

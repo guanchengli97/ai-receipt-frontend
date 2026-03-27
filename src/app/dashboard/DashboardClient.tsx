@@ -123,6 +123,15 @@ type SpendingByCategoryStats = {
   categories: CategoryStat[];
 };
 
+type BillingUsage = {
+  plan: string | null;
+  subscriptionStatus: string | null;
+  subscriptionCurrentPeriodEnd: string | null;
+  dailyLimit: number | null;
+  usedToday: number | null;
+  remainingToday: number | null;
+};
+
 type UploadState = "idle" | "uploading" | "parsing" | "success" | "error";
 
 const CATEGORY_COLOR_PALETTE = [
@@ -302,7 +311,6 @@ function formatMonthDate(value: string) {
 }
 
 export default function DashboardClient() {
-  const mockRemainingTodayCount = 12;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userInitials, setUserInitials] = useState("U");
   const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
@@ -322,6 +330,14 @@ export default function DashboardClient() {
     categories: [],
   });
   const [isLoadingCategoryStats, setIsLoadingCategoryStats] = useState(true);
+  const [billingUsage, setBillingUsage] = useState<BillingUsage>({
+    plan: null,
+    subscriptionStatus: null,
+    subscriptionCurrentPeriodEnd: null,
+    dailyLimit: null,
+    usedToday: null,
+    remainingToday: null,
+  });
 
   const fetchRecentReceipts = useCallback(async () => {
     setIsLoadingRecentReceipts(true);
@@ -504,6 +520,68 @@ export default function DashboardClient() {
     };
 
     void fetchUserProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchBillingUsage = async () => {
+      try {
+        const response = await authFetch("/api/billing/me/usage", {
+          method: "GET",
+          cache: "no-store",
+        });
+        const payload = await response.json().catch(() => null);
+        const payloadObject = toObject(payload);
+
+        if (!response.ok || !payloadObject) {
+          throw new Error("Failed to load billing usage.");
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setBillingUsage({
+          plan:
+            typeof payloadObject.plan === "string" && payloadObject.plan.trim()
+              ? payloadObject.plan.trim()
+              : null,
+          subscriptionStatus:
+            typeof payloadObject.subscriptionStatus === "string" &&
+            payloadObject.subscriptionStatus.trim()
+              ? payloadObject.subscriptionStatus.trim()
+              : null,
+          subscriptionCurrentPeriodEnd:
+            typeof payloadObject.subscriptionCurrentPeriodEnd === "string" &&
+            payloadObject.subscriptionCurrentPeriodEnd.trim()
+              ? payloadObject.subscriptionCurrentPeriodEnd.trim()
+              : null,
+          dailyLimit: toNumber(payloadObject.dailyLimit),
+          usedToday: toNumber(payloadObject.usedToday),
+          remainingToday: toNumber(payloadObject.remainingToday),
+        });
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setBillingUsage({
+          plan: null,
+          subscriptionStatus: null,
+          subscriptionCurrentPeriodEnd: null,
+          dailyLimit: null,
+          usedToday: null,
+          remainingToday: null,
+        });
+      }
+    };
+
+    void fetchBillingUsage();
 
     return () => {
       isMounted = false;
@@ -710,16 +788,18 @@ export default function DashboardClient() {
             </div>
           </div>
 
-          <div className={styles.statCard}>
-            <div className={styles.statInfo}>
-              <h3>Remaining Today</h3>
-              <p>{mockRemainingTodayCount}</p>
-              <span>Mock Data</span>
+          <Link className={styles.statCardLink} href="/subscription" prefetch>
+            <div className={styles.statCard}>
+              <div className={styles.statInfo}>
+                <h3>Remaining Today</h3>
+                <p>{billingUsage.remainingToday ?? "--"}</p>
+                <span>Tap to subscribe</span>
+              </div>
+              <div className={styles.statIcon}>
+                <IconBell />
+              </div>
             </div>
-            <div className={styles.statIcon}>
-              <IconBell />
-            </div>
-          </div>
+          </Link>
         </section>
 
         <section className={styles.chartCard}>

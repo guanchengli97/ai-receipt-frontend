@@ -1,0 +1,160 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eef3ff 0%, #f8f9ff 48%, #ffffff 100%);
+  padding: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.phone {
+  width: min(420px, 100%);
+  background: #f7f9ff;
+  border-radius: 28px;
+  padding: 18px 16px 24px;
+  box-shadow: 0 24px 60px rgba(28, 53, 109, 0.18);
+  border: 1px solid rgba(214, 223, 240, 0.8);
+  min-height: calc(100vh - 36px);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.back {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  color: #5b7fe3;
+  font-size: 18px;
+  box-shadow: 0 8px 18px rgba(35, 58, 106, 0.12);
+}
+
+.title {
+  text-align: center;
+  font-size: 18px;
+  margin: 0;
+  color: #1d2944;
+}
+
+.headerSpacer {
+  width: 36px;
+  height: 36px;
+}
+
+.hero {
+  background: linear-gradient(145deg, #5f8ff6, #78a1ff);
+  color: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+.hero h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.hero p {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.freeQuotaCard {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e4eaf6;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.freeQuotaCard h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #1d2944;
+}
+
+.freeQuotaCard p {
+  margin: 6px 0 0;
+  color: #5b6b8d;
+  font-size: 13px;
+}
+
+.planCard {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e4eaf6;
+  box-shadow: 0 12px 24px rgba(34, 58, 110, 0.08);
+  padding: 16px;
+}
+
+.planTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.planTop h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #1d2944;
+}
+
+.planTop span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3f5ed1;
+}
+
+.featureList {
+  margin: 0;
+  padding-left: 18px;
+  color: #5b6b8d;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.subscribeButton {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #5b86f1;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.note {
+  margin: 10px 0 0;
+  color: #7a89aa;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 0;
+  }
+
+  .phone {
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 16px 14px 20px;
+  }
+}
