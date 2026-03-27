@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import SubscriptionCheckoutButton from "./SubscriptionCheckoutButton";
 import styles from "./page.module.css";
 
 export default async function SubscriptionPage() {
@@ -9,6 +10,8 @@ export default async function SubscriptionPage() {
   if (!token) {
     redirect("/login");
   }
+
+  const priceId = process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID ?? "";
 
   return (
     <div className={styles.page}>
@@ -43,10 +46,8 @@ export default async function SubscriptionPage() {
             <li>Priority parsing queue</li>
             <li>Advanced analytics access</li>
           </ul>
-          <button className={styles.subscribeButton} type="button">
-            Subscribe Now
-          </button>
-          <p className={styles.note}>Payment integration is currently mocked.</p>
+          <SubscriptionCheckoutButton priceId={priceId} />
+          <p className={styles.note}>You will be redirected to Stripe Checkout to complete payment.</p>
         </section>
       </div>
     </div>
