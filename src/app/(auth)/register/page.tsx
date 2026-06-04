@@ -178,138 +178,183 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>AI</span>
-          <span className={styles.brandText}>Receipts</span>
-        </div>
+    <div className={`${styles.page} ${styles.loginPage}`}>
+      <div className={styles.loginShell}>
+        <aside className={styles.loginAside} aria-label="AI Receipts overview">
+          <Link href="/" className={styles.brand}>
+            <span className={styles.brandMark}>AI</span>
+            <span className={styles.brandText}>Receipts</span>
+          </Link>
 
-        <div className={styles.hero}>
-          <span className={styles.heroGlow} />
-          <Image
-            src="/hero-illustration.svg"
-            alt="Receipts dashboard illustration"
-            width={320}
-            height={200}
-            className={styles.heroImage}
-            priority
-          />
-        </div>
-
-        <h1 className={styles.title}>Create Account</h1>
-        <p className={styles.subtitle}>
-          Track and organize your receipts in seconds.
-        </p>
-
-        <form
-          className={`${styles.form} ${styles.stagger}`}
-          onSubmit={handleSubmit}
-        >
-          <label className={styles.inputRow}>
-            <IconUser />
-            <input
-              className={styles.input}
-              type="text"
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              required
-            />
-          </label>
-
-          <label className={styles.inputRow}>
-            <IconMail />
-            <input
-              className={styles.input}
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-
-          <label className={styles.inputRow}>
-            <IconLock />
-            <input
-              className={styles.input}
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-            <button className={styles.inputAction} type="button" aria-label="Show password">
-              <IconEye />
-            </button>
-          </label>
-
-          <label className={styles.inputRow}>
-            <IconLock />
-            <input
-              className={styles.input}
-              type="password"
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              required
-            />
-            <button className={styles.inputAction} type="button" aria-label="Show password">
-              <IconEye />
-            </button>
-          </label>
-
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              checked={agree}
-              onChange={(event) => setAgree(event.target.checked)}
-            />
+          <div className={styles.loginAsideCopy}>
+            <p>Start tracking receipts</p>
+            <h1>Create an account for AI receipt parsing.</h1>
             <span>
-              I agree to the <Link href="/terms">Terms</Link> &amp;{" "}
-              <Link href="/privacy">Privacy Policy</Link>
+              Upload receipt images, review saved details, and export selected
+              transactions as CSV when you need your records.
             </span>
-          </label>
+          </div>
 
-          <button
-            className={styles.primaryButton}
-            type="submit"
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? "Signing Up..." : "Sign Up"}
-          </button>
-
-          {status !== "idle" && message && (
-            <div
-              className={`${styles.status} ${
-                status === "success" ? styles.statusSuccess : styles.statusError
-              }`}
-            >
-              {message}
+          <div className={styles.loginPreview}>
+            <Image
+              src="/receipt-sync-dashboard.png"
+              alt="AI Receipts dashboard preview"
+              width={1536}
+              height={1024}
+              className={styles.loginPreviewImage}
+              priority
+            />
+            <div className={styles.loginPreviewPanel}>
+              <span>Account quota</span>
+              <strong>3 receipts/day</strong>
+              <dl>
+                <div>
+                  <dt>Upgrade</dt>
+                  <dd>200/day</dd>
+                </div>
+                <div>
+                  <dt>Export</dt>
+                  <dd>CSV</dd>
+                </div>
+              </dl>
             </div>
-          )}
-        </form>
+          </div>
+        </aside>
 
-        <p className={styles.helper}>
-          Already have an account? <Link href="/login">Log In</Link>
-        </p>
+        <div className={styles.loginPanel}>
+          <div className={styles.card}>
+            <Link href="/" className={`${styles.brand} ${styles.mobileBrand}`}>
+              <span className={styles.brandMark}>AI</span>
+              <span className={styles.brandText}>Receipts</span>
+            </Link>
 
-        <div className={styles.divider}>Or sign up with</div>
+            <div className={styles.hero}>
+              <span className={styles.heroGlow} />
+              <Image
+                src="/hero-illustration.svg"
+                alt="Receipts dashboard illustration"
+                width={320}
+                height={200}
+                className={styles.heroImage}
+                priority
+              />
+            </div>
 
-        <div className={`${styles.form} ${styles.stagger}`}>
-          <button className={styles.socialButton} type="button">
-            <IconGoogle />
-            Continue with Google
-          </button>
-          <button className={styles.socialButton} type="button">
-            <IconApple />
-            Continue with Apple
-          </button>
-        </div>
+            <h2 className={styles.title}>Create Account</h2>
+            <p className={styles.subtitle}>
+              Track and organize your receipts in seconds.
+            </p>
 
-        <div className={styles.footer}>
-          Already have an account? <Link href="/login">Log In</Link>
+            <form
+              className={`${styles.form} ${styles.stagger}`}
+              onSubmit={handleSubmit}
+            >
+              <label className={styles.inputRow}>
+                <IconUser />
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className={styles.inputRow}>
+                <IconMail />
+                <input
+                  className={styles.input}
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className={styles.inputRow}>
+                <IconLock />
+                <input
+                  className={styles.input}
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+                <button className={styles.inputAction} type="button" aria-label="Show password">
+                  <IconEye />
+                </button>
+              </label>
+
+              <label className={styles.inputRow}>
+                <IconLock />
+                <input
+                  className={styles.input}
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                />
+                <button className={styles.inputAction} type="button" aria-label="Show password">
+                  <IconEye />
+                </button>
+              </label>
+
+              <label className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={agree}
+                  onChange={(event) => setAgree(event.target.checked)}
+                />
+                <span>
+                  I agree to the <Link href="/terms">Terms</Link> &amp;{" "}
+                  <Link href="/privacy">Privacy Policy</Link>
+                </span>
+              </label>
+
+              <button
+                className={styles.primaryButton}
+                type="submit"
+                disabled={status === "loading"}
+              >
+                {status === "loading" ? "Signing Up..." : "Sign Up"}
+              </button>
+
+              {status !== "idle" && message && (
+                <div
+                  className={`${styles.status} ${
+                    status === "success" ? styles.statusSuccess : styles.statusError
+                  }`}
+                >
+                  {message}
+                </div>
+              )}
+            </form>
+
+            <p className={styles.helper}>
+              Already have an account? <Link href="/login">Log In</Link>
+            </p>
+
+            <div className={styles.divider}>Or sign up with</div>
+
+            <div className={`${styles.form} ${styles.stagger}`}>
+              <button className={styles.socialButton} type="button">
+                <IconGoogle />
+                Continue with Google
+              </button>
+              <button className={styles.socialButton} type="button">
+                <IconApple />
+                Continue with Apple
+              </button>
+            </div>
+
+            <div className={styles.footer}>
+              Already have an account? <Link href="/login">Log In</Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -281,105 +281,147 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>AI</span>
-          <span className={styles.brandText}>Receipts</span>
-        </div>
+    <div className={`${styles.page} ${styles.loginPage}`}>
+      <div className={styles.loginShell}>
+        <aside className={styles.loginAside} aria-label="AI Receipts overview">
+          <Link href="/" className={styles.brand}>
+            <span className={styles.brandMark}>AI</span>
+            <span className={styles.brandText}>Receipts</span>
+          </Link>
 
-        <div className={styles.hero}>
-          <span className={styles.heroGlow} />
-          <Image
-            src="/hero-illustration.svg"
-            alt="Receipts dashboard illustration"
-            width={320}
-            height={200}
-            className={styles.heroImage}
-            priority
-          />
-        </div>
+          <div className={styles.loginAsideCopy}>
+            <p>Receipt workspace</p>
+            <h1>Sign in and keep your receipts organized.</h1>
+            <span>
+              Upload receipt images, review AI-parsed details, and export selected
+              transactions as CSV from one dashboard.
+            </span>
+          </div>
 
-        <h1 className={styles.title}>Welcome Back</h1>
-        <p className={styles.subtitle}>
-          Sign in to track and organize your receipts in seconds.
-        </p>
-
-        <form
-          className={`${styles.form} ${styles.stagger}`}
-          onSubmit={handleSubmit}
-        >
-          <label className={styles.inputRow}>
-            <IconMail />
-            <input
-              className={styles.input}
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
+          <div className={styles.loginPreview}>
+            <Image
+              src="/receipt-sync-dashboard.png"
+              alt="AI Receipts dashboard preview"
+              width={1536}
+              height={1024}
+              className={styles.loginPreviewImage}
+              priority
             />
-          </label>
-
-          <label className={styles.inputRow}>
-            <IconLock />
-            <input
-              className={styles.input}
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-            <Link className={styles.inlineLink} href="#">
-              Forgot password?
-            </Link>
-          </label>
-
-          <button
-            className={styles.primaryButton}
-            type="submit"
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? "Logging In..." : "Log In"}
-          </button>
-
-          {status !== "idle" && message && (
-            <div
-              className={`${styles.status} ${
-                status === "success" ? styles.statusSuccess : styles.statusError
-              }`}
-            >
-              {message}
+            <div className={styles.loginPreviewPanel}>
+              <span>Recent receipt</span>
+              <strong>Paris Baguette</strong>
+              <dl>
+                <div>
+                  <dt>Total</dt>
+                  <dd>$14.25</dd>
+                </div>
+                <div>
+                  <dt>Status</dt>
+                  <dd>Ready to review</dd>
+                </div>
+              </dl>
             </div>
-          )}
-        </form>
+          </div>
+        </aside>
 
-        <p className={styles.helper}>
-          Don&apos;t have an account? <Link href="/register">Sign Up</Link>
-        </p>
+        <div className={styles.loginPanel}>
+          <div className={styles.card}>
+            <Link href="/" className={`${styles.brand} ${styles.mobileBrand}`}>
+              <span className={styles.brandMark}>AI</span>
+              <span className={styles.brandText}>Receipts</span>
+            </Link>
 
-        <div className={styles.divider}>Or sign in with</div>
+            <div className={styles.hero}>
+              <span className={styles.heroGlow} />
+              <Image
+                src="/hero-illustration.svg"
+                alt="Receipts dashboard illustration"
+                width={320}
+                height={200}
+                className={styles.heroImage}
+                priority
+              />
+            </div>
 
-        <div className={`${styles.form} ${styles.stagger}`}>
-          <button
-            className={styles.socialButton}
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={status === "loading"}
-          >
-            <IconGoogle />
-            Continue with Google
-          </button>
-          <button className={styles.socialButton} type="button">
-            <IconApple />
-            Continue with Apple
-          </button>
-        </div>
+            <h2 className={styles.title}>Welcome Back</h2>
+            <p className={styles.subtitle}>
+              Sign in to track and organize your receipts in seconds.
+            </p>
 
-        <div className={styles.footer}>
-          By continuing, you agree to our <Link href="/terms">Terms</Link> &amp;{" "}
-          <Link href="/privacy">Privacy Policy</Link>.
+            <form
+              className={`${styles.form} ${styles.stagger}`}
+              onSubmit={handleSubmit}
+            >
+              <label className={styles.inputRow}>
+                <IconMail />
+                <input
+                  className={styles.input}
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+
+              <label className={styles.inputRow}>
+                <IconLock />
+                <input
+                  className={styles.input}
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </label>
+
+              <button
+                className={styles.primaryButton}
+                type="submit"
+                disabled={status === "loading"}
+              >
+                {status === "loading" ? "Logging In..." : "Log In"}
+              </button>
+
+              {status !== "idle" && message && (
+                <div
+                  className={`${styles.status} ${
+                    status === "success" ? styles.statusSuccess : styles.statusError
+                  }`}
+                >
+                  {message}
+                </div>
+              )}
+            </form>
+
+            <p className={styles.helper}>
+              Don&apos;t have an account? <Link href="/register">Sign Up</Link>
+            </p>
+
+            <div className={styles.divider}>Or sign in with</div>
+
+            <div className={`${styles.form} ${styles.stagger}`}>
+              <button
+                className={styles.socialButton}
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={status === "loading"}
+              >
+                <IconGoogle />
+                Continue with Google
+              </button>
+              <button className={styles.socialButton} type="button">
+                <IconApple />
+                Continue with Apple
+              </button>
+            </div>
+
+            <div className={styles.footer}>
+              By continuing, you agree to our <Link href="/terms">Terms</Link> &amp;{" "}
+              <Link href="/privacy">Privacy Policy</Link>.
+            </div>
+          </div>
         </div>
       </div>
     </div>

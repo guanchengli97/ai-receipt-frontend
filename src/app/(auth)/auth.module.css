@@ -31,6 +31,174 @@
   left: -160px;
 }
 
+.loginPage {
+  align-items: stretch;
+  padding: 32px;
+  background: #f5f5f7;
+  overflow: auto;
+}
+
+.loginPage::before,
+.loginPage::after {
+  display: none;
+}
+
+.loginShell {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, 100%);
+  min-height: calc(100vh - 64px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr);
+  margin: 0 auto;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(214, 223, 240, 0.75);
+  border-radius: 28px;
+}
+
+.loginAside {
+  min-height: 720px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 42px;
+  padding: 40px;
+  color: #ffffff;
+  background: #1d1d1f;
+}
+
+.loginAside .brandMark,
+.loginAside .brandText {
+  color: #ffffff;
+}
+
+.loginAsideCopy {
+  max-width: 560px;
+}
+
+.loginAsideCopy p {
+  margin: 0 0 14px;
+  color: #cccccc;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.29;
+}
+
+.loginAsideCopy h1 {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.loginAsideCopy span {
+  display: block;
+  max-width: 520px;
+  margin-top: 18px;
+  color: #cccccc;
+  font-size: 17px;
+  line-height: 1.47;
+}
+
+.loginPreview {
+  position: relative;
+  align-self: end;
+  min-height: 360px;
+  display: grid;
+  align-items: end;
+}
+
+.loginPreviewImage {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+}
+
+.loginPreviewPanel {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: min(300px, calc(100% - 48px));
+  padding: 20px;
+  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(224, 224, 224, 0.9);
+  border-radius: 18px;
+}
+
+.loginPreviewPanel span {
+  color: #7a7a7a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.loginPreviewPanel strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 21px;
+  line-height: 1.19;
+}
+
+.loginPreviewPanel dl {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.loginPreviewPanel div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.loginPreviewPanel dt,
+.loginPreviewPanel dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.43;
+}
+
+.loginPreviewPanel dt {
+  color: #7a7a7a;
+}
+
+.loginPreviewPanel dd {
+  font-weight: 600;
+  text-align: right;
+}
+
+.loginPanel {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 48px;
+  background: #ffffff;
+}
+
+.loginPanel .card {
+  width: min(420px, 100%);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.loginPanel .hero {
+  display: none;
+}
+
+.mobileBrand {
+  display: none;
+}
+
 .card {
   width: min(420px, 100%);
   background: var(--surface);
@@ -349,5 +517,66 @@
 
   .title {
     font-size: 20px;
+  }
+}
+
+@media (max-width: 960px) {
+  .loginPage {
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px 64px;
+    background: radial-gradient(circle at top, #dfe8ff 0%, #f5f7ff 45%, #ffffff 100%);
+    overflow: hidden;
+  }
+
+  .loginPage::before,
+  .loginPage::after {
+    display: block;
+  }
+
+  .loginShell {
+    display: block;
+    min-height: 0;
+    width: min(420px, 100%);
+    overflow: visible;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+
+  .loginAside {
+    display: none;
+  }
+
+  .loginPanel {
+    display: block;
+    padding: 0;
+    background: transparent;
+  }
+
+  .loginPanel .card {
+    width: min(420px, 100%);
+    background: var(--surface);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(214, 223, 240, 0.7);
+    padding: 24px 24px 30px;
+    animation: floatIn 0.7s ease forwards;
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  .loginPanel .hero {
+    display: grid;
+  }
+
+  .mobileBrand {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginPanel .card {
+    padding: 20px 18px 26px;
   }
 }
