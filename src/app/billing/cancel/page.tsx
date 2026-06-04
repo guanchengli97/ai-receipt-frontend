@@ -7,7 +7,7 @@ export default function BillingCancelPage() {
       <div className={styles.phone}>
         <header className={styles.header}>
           <Link className={styles.back} href="/subscription" prefetch aria-label="Back to subscription">
-            ←
+            Back
           </Link>
           <h1 className={styles.title}>Payment Cancelled</h1>
           <div className={styles.headerSpacer} />

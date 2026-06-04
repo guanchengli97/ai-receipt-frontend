@@ -135,12 +135,12 @@ type BillingUsage = {
 type UploadState = "idle" | "uploading" | "parsing" | "success" | "error";
 
 const CATEGORY_COLOR_PALETTE = [
-  "#f28b45",
-  "#6ea8ff",
-  "#9ed19d",
-  "#b089f7",
-  "#f3c969",
-  "#6fd7cc",
+  "#0066cc",
+  "#0071e3",
+  "#7a7a7a",
+  "#cccccc",
+  "#333333",
+  "#e0e0e0",
 ];
 
 function toObject(value: unknown): Record<string, unknown> | null {
@@ -837,7 +837,7 @@ export default function DashboardClient() {
           </div>
         </section>
 
-        <section>
+        <section className={styles.recentSection}>
           <div className={styles.recentHeader}>
             <span>Recent Documents</span>
             {/* <Link href="#">View All</Link> */}

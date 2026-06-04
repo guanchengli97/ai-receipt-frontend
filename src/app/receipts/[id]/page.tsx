@@ -331,24 +331,27 @@ export default function ReceiptDetailPage() {
     return url;
   };
 
+  const detailImageId = detail?.imageId ?? null;
+  const detailImageUrl = detail?.imageUrl ?? "";
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchAttachment = async () => {
-      if (!detail) {
+      if (!detailImageId && !detailImageUrl) {
         setAttachmentUrl("");
         setAttachmentStatus("idle");
         return;
       }
 
-      const rawUrl = detail.imageUrl;
+      const rawUrl = detailImageUrl;
       if (rawUrl && (rawUrl.startsWith("http://") || rawUrl.startsWith("https://"))) {
         setAttachmentUrl(rawUrl);
         setAttachmentStatus("success");
         return;
       }
 
-      if (!detail.imageId) {
+      if (!detailImageId) {
         setAttachmentUrl("");
         setAttachmentStatus("idle");
         return;
@@ -356,7 +359,7 @@ export default function ReceiptDetailPage() {
 
       try {
         setAttachmentStatus("loading");
-        const url = await fetchPresignedUrl(detail.imageId);
+        const url = await fetchPresignedUrl(detailImageId);
 
         if (!isMounted) {
           return;
@@ -379,7 +382,7 @@ export default function ReceiptDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [detail?.imageId, detail?.imageUrl]);
+  }, [detailImageId, detailImageUrl]);
 
   const totals = useMemo(() => {
     if (!detail) {
@@ -638,7 +641,7 @@ export default function ReceiptDetailPage() {
       <div className={styles.phone}>
         <header className={styles.header}>
           <Link className={styles.back} href={backHref} prefetch aria-label="Back">
-            ←
+            Back
           </Link>
           <div className={styles.headerMain}>
             <div className={styles.headerTitle}>{detail?.merchantName || "Receipt"}</div>
@@ -669,6 +672,7 @@ export default function ReceiptDetailPage() {
 
         {status === "success" && detail && totals && (
           <>
+            <div className={styles.receiptLayout}>
             <section className={styles.summaryCard}>
               <div>
                 <p className={styles.summaryLabel}>Total</p>
@@ -678,13 +682,13 @@ export default function ReceiptDetailPage() {
                     ? "Review status unknown"
                     : detail.reviewed
                       ? "Reviewed"
-                      : "Unreviewed"}
+                  : "Unreviewed"}
                 </p>
               </div>
-              <div className={styles.summaryIcon}>🧾</div>
+              <div className={styles.summaryIcon}>AI</div>
             </section>
 
-            <section className={styles.card}>
+            <section className={`${styles.card} ${styles.detailCard}`}>
               <h3>Receipt Details</h3>
               <div className={styles.detailRow}>
                 <span>Merchant</span>
@@ -823,7 +827,7 @@ export default function ReceiptDetailPage() {
               </div>
             </section>
 
-            <section className={styles.card}>
+            <section className={`${styles.card} ${styles.itemsCard}`}>
               <h3>Items</h3>
               {editDetail && editDetail.items.length === 0 && (
                 <div className={styles.empty}>No items yet.</div>
@@ -967,7 +971,7 @@ export default function ReceiptDetailPage() {
               </>
             )}
 
-            <section className={styles.card}>
+            <section className={`${styles.card} ${styles.attachmentCard}`}>
               <h3>Attachment</h3>
               {attachmentUrl ? (
                 <div className={styles.attachment}>
@@ -985,9 +989,9 @@ export default function ReceiptDetailPage() {
                           fill
                           sizes="72px"
                           onError={() => setImageFailed(true)}
-                        />
+                    />
                       ) : (
-                        <div className={styles.placeholder}>🧾</div>
+                        <div className={styles.placeholder}>Receipt</div>
                       )}
                     </div>
                   </button>
@@ -1004,6 +1008,7 @@ export default function ReceiptDetailPage() {
                 <div className={styles.empty}>No attachment.</div>
               )}
             </section>
+            </div>
 
             {previewOpen && (
               <>
@@ -1033,9 +1038,9 @@ export default function ReceiptDetailPage() {
                         fill
                         sizes="(max-width: 768px) 92vw, 560px"
                         onError={() => setImageFailed(true)}
-                      />
+                    />
                     ) : (
-                      <div className={styles.previewPlaceholder}>🧾</div>
+                      <div className={styles.previewPlaceholder}>Receipt</div>
                     )}
                   </div>
                 </dialog>

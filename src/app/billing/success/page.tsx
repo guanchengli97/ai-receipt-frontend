@@ -7,7 +7,7 @@ export default function BillingSuccessPage() {
       <div className={styles.phone}>
         <header className={styles.header}>
           <Link className={styles.back} href="/dashboard" prefetch aria-label="Back to dashboard">
-            ←
+            Back
           </Link>
           <h1 className={styles.title}>Payment Success</h1>
           <div className={styles.headerSpacer} />

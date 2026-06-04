@@ -11,7 +11,7 @@ export default function PrivacyPage() {
             <p className={styles.updated}>Last updated: February 12, 2026</p>
           </div>
           <Link href="/register" className={styles.back}>
-            Back to Sign Up
+            Back
           </Link>
         </div>
 

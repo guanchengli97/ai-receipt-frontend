@@ -34,6 +34,23 @@ function toBoolean(value: unknown) {
   return typeof value === "boolean" ? value : null;
 }
 
+function formatDate(value: string) {
+  if (!value) {
+    return "--";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
@@ -94,6 +111,19 @@ export default function ProfilePage() {
     const first = parts[0]?.[0] ?? "U";
     const second = parts[1]?.[0] ?? "";
     return `${first}${second}`.toUpperCase();
+  }, [profile]);
+
+  const accountMeta = useMemo(() => {
+    if (!profile) {
+      return [];
+    }
+
+    return [
+      ["Status", profile.isActive === false ? "Inactive" : "Active"],
+      ["User ID", profile.id ? `#${profile.id}` : "--"],
+      ["Member since", formatDate(profile.createdAt)],
+      ["Last updated", formatDate(profile.updatedAt)],
+    ];
   }, [profile]);
 
   const handleStartEdit = () => {
@@ -172,12 +202,12 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.phone}>
-        <header className={styles.header}>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
           <Link className={styles.back} href="/dashboard" prefetch aria-label="Back to dashboard">
-            ←
+            Back
           </Link>
-          <h1 className={styles.title}>Profile</h1>
+          <p className={styles.title}>Profile</p>
           {!isEditing ? (
             <button
               className={styles.action}
@@ -192,15 +222,10 @@ export default function ProfilePage() {
               {saveStatus === "saving" ? "Saving..." : "Save"}
             </button>
           )}
-        </header>
+        </div>
+      </header>
 
-        <section className={styles.hero}>
-          <div className={styles.avatar}>{initials}</div>
-          <button className={styles.editPhoto} type="button">
-            Edit Photo
-          </button>
-        </section>
-
+      <main className={styles.main}>
         {status === "loading" && <div className={styles.status}>Loading profile...</div>}
         {status === "error" && (
           <div className={styles.status}>Failed to load profile. Please try again.</div>
@@ -213,59 +238,100 @@ export default function ProfilePage() {
 
         {status === "success" && profile && (
           <>
-            <div className={styles.identity}>
-              <h2>{profile.username || "Unknown User"}</h2>
-              <p>{profile.email || "--"}</p>
-            </div>
+            <section className={styles.hero}>
+              <div className={styles.heroCopy}>
+                <p className={styles.kicker}>Personal profile</p>
+                <h1>{profile.username || "Unknown User"}</h1>
+                <p>
+                  Manage the account details used across receipt uploads,
+                  review flows, and exported transaction records.
+                </p>
+              </div>
 
-            <section className={styles.list}>
-              <div className={styles.listItem}>
-                <span className={styles.label}>Full Name</span>
-                {isEditing ? (
-                  <input
-                    className={styles.input}
-                    type="text"
-                    value={usernameInput}
-                    onChange={(event) => setUsernameInput(event.target.value)}
-                    placeholder="Enter username"
-                    maxLength={60}
-                  />
-                ) : (
-                  <span className={styles.value}>{profile.username || "--"}</span>
-                )}
-              </div>
-              <div className={styles.listItem}>
-                <span className={styles.label}>Email</span>
-                <span className={styles.value}>{profile.email || "--"}</span>
-              </div>
-              <div className={styles.listItem}>
-                <span className={styles.label}>Currency</span>
-                {isEditing ? (
-                  <select
-                    className={styles.select}
-                    value={currencyInput}
-                    onChange={(event) => setCurrencyInput(event.target.value)}
-                  >
-                    <option value="$">USD</option>
-                  </select>
-                ) : (
-                  <span className={styles.value}>{profile.currency || "--"}</span>
-                )}
+              <div className={styles.identityPanel}>
+                <div className={styles.avatar}>{initials}</div>
+                <div className={styles.identity}>
+                  <h2>{profile.username || "Unknown User"}</h2>
+                  <p>{profile.email || "--"}</p>
+                </div>
+                <button className={styles.editPhoto} type="button">
+                  Edit Photo
+                </button>
               </div>
             </section>
 
-            {isEditing && (
-              <button className={styles.cancel} type="button" onClick={handleCancelEdit}>
-                Cancel
-              </button>
-            )}
+            <section className={styles.detailsSection}>
+              <div className={styles.detailsIntro}>
+                <p className={styles.kickerDark}>Account</p>
+                <h2>Keep your receipt workspace current.</h2>
+                <p>
+                  Profile changes apply to the signed-in account and are saved
+                  after confirmation.
+                </p>
+              </div>
 
-            <button className={styles.logout} type="button" onClick={logoutAndRedirect}>
-              Log Out
-            </button>
+              <div className={styles.detailsPanel}>
+                <div className={styles.list}>
+                  <div className={styles.listItem}>
+                    <span className={styles.label}>Full Name</span>
+                    {isEditing ? (
+                      <input
+                        className={styles.input}
+                        type="text"
+                        value={usernameInput}
+                        onChange={(event) => setUsernameInput(event.target.value)}
+                        placeholder="Enter username"
+                        maxLength={60}
+                      />
+                    ) : (
+                      <span className={styles.value}>{profile.username || "--"}</span>
+                    )}
+                  </div>
+                  <div className={styles.listItem}>
+                    <span className={styles.label}>Email</span>
+                    <span className={styles.value}>{profile.email || "--"}</span>
+                  </div>
+                  <div className={styles.listItem}>
+                    <span className={styles.label}>Currency</span>
+                    {isEditing ? (
+                      <select
+                        className={styles.select}
+                        value={currencyInput}
+                        onChange={(event) => setCurrencyInput(event.target.value)}
+                      >
+                        <option value="$">USD</option>
+                      </select>
+                    ) : (
+                      <span className={styles.value}>{profile.currency || "--"}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.metaGrid}>
+                  {accountMeta.map(([label, value]) => (
+                    <article className={styles.metaCard} key={label}>
+                      <span>{label}</span>
+                      <strong>{value}</strong>
+                    </article>
+                  ))}
+                </div>
+
+                <div className={styles.footerActions}>
+                  {isEditing && (
+                    <button className={styles.cancel} type="button" onClick={handleCancelEdit}>
+                      Cancel
+                    </button>
+                  )}
+
+                  <button className={styles.logout} type="button" onClick={logoutAndRedirect}>
+                    Log Out
+                  </button>
+                </div>
+              </div>
+            </section>
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 }
