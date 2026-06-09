@@ -310,6 +310,20 @@ function formatMonthDate(value: string) {
   }).format(new Date(parsed));
 }
 
+function formatBillingDate(value: string | null) {
+  if (!value) {
+    return "";
+  }
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(parsed));
+}
+
 export default function DashboardClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userInitials, setUserInitials] = useState("U");
@@ -359,7 +373,7 @@ export default function DashboardClient() {
         throw new Error(message);
       }
 
-      setRecentReceipts(normalizeReceipts(payload).slice(0, 15));
+      setRecentReceipts(normalizeReceipts(payload).slice(0, 5));
     } catch (error) {
       setRecentReceipts([]);
       setRecentReceiptsError(
@@ -738,6 +752,16 @@ export default function DashboardClient() {
     return "This Month";
   }, [categoryStats.monthEnd, categoryStats.monthStart]);
 
+  const isSubscribed = ["active", "trialing"].includes(
+    billingUsage.subscriptionStatus?.toLowerCase() ?? ""
+  );
+  const billingPeriodEnd = formatBillingDate(billingUsage.subscriptionCurrentPeriodEnd);
+  const remainingTodayLabel = isSubscribed
+    ? billingPeriodEnd
+      ? `Pro active · renews ${billingPeriodEnd}`
+      : "Pro active"
+    : "Upgrade for 10/day";
+
   return (
     <div className={styles.page}>
       <div className={styles.phone}>
@@ -764,6 +788,25 @@ export default function DashboardClient() {
             </Link>
           </div>
         </header>
+
+        <section className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <p className={styles.kicker}>Dashboard</p>
+            <h1>Receipt work, at a glance.</h1>
+            <p>
+              Upload new receipts, review recent documents, and understand this
+              month&apos;s spending from one focused workspace.
+            </p>
+          </div>
+          <button
+            className={styles.heroUploadButton}
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadState === "uploading" || uploadState === "parsing"}
+          >
+            Upload Receipt
+          </button>
+        </section>
 
         <section className={styles.cards}>
           <div className={styles.statCard}>
@@ -793,7 +836,7 @@ export default function DashboardClient() {
               <div className={styles.statInfo}>
                 <h3>Remaining Today</h3>
                 <p>{billingUsage.remainingToday ?? "--"}</p>
-                <span>Tap to subscribe</span>
+                <span>{remainingTodayLabel}</span>
               </div>
               <div className={styles.statIcon}>
                 <IconBell />

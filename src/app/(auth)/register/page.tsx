@@ -210,7 +210,7 @@ export default function RegisterPage() {
               <dl>
                 <div>
                   <dt>Upgrade</dt>
-                  <dd>200/day</dd>
+                  <dd>10/day</dd>
                 </div>
                 <div>
                   <dt>Export</dt>

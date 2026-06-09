@@ -28,7 +28,7 @@ const featureTiles = [
 
 const stats = [
   ["3/day", "Starter quota"],
-  ["200/day", "Paid quota"],
+  ["10/day", "Paid quota"],
   ["CSV", "Transaction export"],
   ["AI", "Receipt parsing"],
 ];
@@ -39,35 +39,7 @@ const reviewSteps = [
   "Open the receipt to review, edit, mark reviewed, or delete it.",
 ];
 
-const footerSections = [
-  {
-    title: "Product",
-    links: [
-      ["Upload", "#upload"],
-      ["Review", "#review"],
-      ["Export", "#export"],
-    ],
-  },
-  {
-    title: "Account",
-    links: [
-      ["Log In", "/login"],
-      ["Sign Up", "/register"],
-      ["Subscription", "/subscription"],
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      ["Privacy", "/privacy"],
-      ["Terms", "/terms"],
-    ],
-  },
-];
-
 export default function Home() {
-  const currentYear = new Date().getFullYear();
-
   return (
     <main className={styles.page}>
       <header className={styles.globalNav}>
@@ -227,46 +199,6 @@ export default function Home() {
         </div>
       </section>
 
-      <footer id="account" className={styles.footer} aria-label="Footer">
-        <div className={styles.footerInner}>
-          <div className={styles.footerBrand}>
-            <Link href="/" className={styles.footerLogo}>
-              AI Receipts
-            </Link>
-            <p>
-              Upload receipt images, extract receipt data with AI, review saved
-              details, and export selected transactions when you need a CSV.
-            </p>
-            <Link href="/register" className={styles.primaryButton}>
-              Get Started
-            </Link>
-          </div>
-
-          <nav className={styles.footerNav} aria-label="Footer navigation">
-            {footerSections.map((section) => (
-              <div key={section.title} className={styles.footerColumn}>
-                <h2>{section.title}</h2>
-                <ul>
-                  {section.links.map(([label, href]) => (
-                    <li key={href}>
-                      {href.startsWith("#") ? (
-                        <a href={href}>{label}</a>
-                      ) : (
-                        <Link href={href}>{label}</Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </nav>
-
-          <div className={styles.footerBottom}>
-            <span>Copyright © {currentYear} AI Receipts. All rights reserved.</span>
-            <span>Receipt upload, AI parsing, review, and CSV export.</span>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

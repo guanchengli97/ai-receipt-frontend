@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Sora } from "next/font/google";
+import AppFooter from "./AppFooter";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -28,6 +29,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${plusJakarta.variable} ${sora.variable}`}>
         {children}
+        <AppFooter />
       </body>
     </html>
   );

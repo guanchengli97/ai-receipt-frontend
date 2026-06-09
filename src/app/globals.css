@@ -51,3 +51,134 @@ input {
 ::selection {
   background: rgba(0, 102, 204, 0.18);
 }
+
+.appFooter {
+  color: #333333;
+  background: #f5f5f7;
+  border-top: 1px solid #e0e0e0;
+}
+
+.appFooterInner {
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) minmax(360px, 1fr);
+  gap: 48px;
+  margin: 0 auto;
+  padding: 64px 32px 28px;
+}
+
+.appFooterBrand {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 18px;
+}
+
+.appFooterLogo {
+  color: #1d1d1f;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.19;
+  letter-spacing: 0.231px;
+}
+
+.appFooterBrand p {
+  max-width: 520px;
+  margin: 0;
+  color: #333333;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+}
+
+.appFooterCta {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 11px 22px;
+  color: #ffffff;
+  background: #0066cc;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  transition: transform 0.16s ease;
+}
+
+.appFooterCta:active {
+  transform: scale(0.95);
+}
+
+.appFooter a:focus-visible {
+  outline: 2px solid #0071e3;
+  outline-offset: 3px;
+}
+
+.appFooterNav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.appFooterColumn h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.29;
+  letter-spacing: -0.224px;
+}
+
+.appFooterColumn ul {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.appFooterColumn a {
+  color: #7a7a7a;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.43;
+  letter-spacing: -0.224px;
+}
+
+.appFooterColumn a:hover {
+  color: #0066cc;
+}
+
+.appFooterBottom {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 28px;
+  border-top: 1px solid #e0e0e0;
+  color: #7a7a7a;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.12px;
+}
+
+@media (max-width: 640px) {
+  .appFooterInner {
+    grid-template-columns: 1fr;
+    padding: 48px 20px 28px;
+  }
+
+  .appFooterNav {
+    grid-template-columns: 1fr;
+  }
+
+  .appFooterBottom {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

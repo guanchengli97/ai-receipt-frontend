@@ -284,6 +284,40 @@
   text-align: center;
 }
 
+.currentPlan {
+  display: grid;
+  gap: 14px;
+}
+
+.currentPlan p {
+  margin: 0;
+  color: #cccccc;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+}
+
+.currentPlan strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.statusBadge {
+  width: max-content;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  color: #ffffff;
+  background: #0066cc;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.29;
+  letter-spacing: -0.224px;
+}
+
 .quotaSection {
   background: #ffffff;
 }
