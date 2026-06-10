@@ -7,7 +7,6 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE)?.value;
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
   const isProtected =
-    pathname === "/" ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/transactions") ||
     pathname.startsWith("/profile") ||
@@ -30,7 +29,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
     "/login",
     "/register",
     "/dashboard/:path*",
