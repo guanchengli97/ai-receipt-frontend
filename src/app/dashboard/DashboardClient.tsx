@@ -324,6 +324,37 @@ function formatBillingDate(value: string | null) {
   }).format(new Date(parsed));
 }
 
+function normalizeBillingUsage(payloadObject: Record<string, unknown>): BillingUsage {
+  return {
+    plan:
+      typeof payloadObject.plan === "string" && payloadObject.plan.trim()
+        ? payloadObject.plan.trim()
+        : null,
+    subscriptionStatus:
+      typeof payloadObject.subscriptionStatus === "string" &&
+      payloadObject.subscriptionStatus.trim()
+        ? payloadObject.subscriptionStatus.trim()
+        : null,
+    subscriptionCurrentPeriodEnd:
+      typeof payloadObject.subscriptionCurrentPeriodEnd === "string" &&
+      payloadObject.subscriptionCurrentPeriodEnd.trim()
+        ? payloadObject.subscriptionCurrentPeriodEnd.trim()
+        : null,
+    dailyLimit: toNumber(payloadObject.dailyLimit),
+    usedToday: toNumber(payloadObject.usedToday),
+    remainingToday: toNumber(payloadObject.remainingToday),
+  };
+}
+
+const EMPTY_BILLING_USAGE: BillingUsage = {
+  plan: null,
+  subscriptionStatus: null,
+  subscriptionCurrentPeriodEnd: null,
+  dailyLimit: null,
+  usedToday: null,
+  remainingToday: null,
+};
+
 export default function DashboardClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [userInitials, setUserInitials] = useState("U");
@@ -344,14 +375,7 @@ export default function DashboardClient() {
     categories: [],
   });
   const [isLoadingCategoryStats, setIsLoadingCategoryStats] = useState(true);
-  const [billingUsage, setBillingUsage] = useState<BillingUsage>({
-    plan: null,
-    subscriptionStatus: null,
-    subscriptionCurrentPeriodEnd: null,
-    dailyLimit: null,
-    usedToday: null,
-    remainingToday: null,
-  });
+  const [billingUsage, setBillingUsage] = useState<BillingUsage>(EMPTY_BILLING_USAGE);
 
   const fetchRecentReceipts = useCallback(async () => {
     setIsLoadingRecentReceipts(true);
@@ -387,6 +411,25 @@ export default function DashboardClient() {
   useEffect(() => {
     void fetchRecentReceipts();
   }, [fetchRecentReceipts]);
+
+  const fetchBillingUsage = useCallback(async () => {
+    try {
+      const response = await authFetch("/api/billing/me/usage", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => null);
+      const payloadObject = toObject(payload);
+
+      if (!response.ok || !payloadObject) {
+        throw new Error("Failed to load billing usage.");
+      }
+
+      setBillingUsage(normalizeBillingUsage(payloadObject));
+    } catch {
+      setBillingUsage(EMPTY_BILLING_USAGE);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -541,66 +584,8 @@ export default function DashboardClient() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchBillingUsage = async () => {
-      try {
-        const response = await authFetch("/api/billing/me/usage", {
-          method: "GET",
-          cache: "no-store",
-        });
-        const payload = await response.json().catch(() => null);
-        const payloadObject = toObject(payload);
-
-        if (!response.ok || !payloadObject) {
-          throw new Error("Failed to load billing usage.");
-        }
-
-        if (!isMounted) {
-          return;
-        }
-
-        setBillingUsage({
-          plan:
-            typeof payloadObject.plan === "string" && payloadObject.plan.trim()
-              ? payloadObject.plan.trim()
-              : null,
-          subscriptionStatus:
-            typeof payloadObject.subscriptionStatus === "string" &&
-            payloadObject.subscriptionStatus.trim()
-              ? payloadObject.subscriptionStatus.trim()
-              : null,
-          subscriptionCurrentPeriodEnd:
-            typeof payloadObject.subscriptionCurrentPeriodEnd === "string" &&
-            payloadObject.subscriptionCurrentPeriodEnd.trim()
-              ? payloadObject.subscriptionCurrentPeriodEnd.trim()
-              : null,
-          dailyLimit: toNumber(payloadObject.dailyLimit),
-          usedToday: toNumber(payloadObject.usedToday),
-          remainingToday: toNumber(payloadObject.remainingToday),
-        });
-      } catch {
-        if (!isMounted) {
-          return;
-        }
-
-        setBillingUsage({
-          plan: null,
-          subscriptionStatus: null,
-          subscriptionCurrentPeriodEnd: null,
-          dailyLimit: null,
-          usedToday: null,
-          remainingToday: null,
-        });
-      }
-    };
-
     void fetchBillingUsage();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  }, [fetchBillingUsage]);
 
   useEffect(() => {
     if (uploadState !== "success") {
@@ -618,8 +603,15 @@ export default function DashboardClient() {
   }, [uploadState]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const selectedFiles = event.target.files;
+    const file = selectedFiles?.[0];
     event.target.value = "";
+
+    if (selectedFiles && selectedFiles.length > 1) {
+      setUploadState("error");
+      setUploadMessage("Please select only one receipt image at a time.");
+      return;
+    }
 
     if (!file) {
       return;
@@ -701,7 +693,7 @@ export default function DashboardClient() {
 
       setUploadState("success");
       setUploadMessage("Receipt uploaded and sent for parsing.");
-      await fetchRecentReceipts();
+      await Promise.all([fetchRecentReceipts(), fetchBillingUsage()]);
     } catch (error) {
       setUploadState("error");
       setUploadMessage(
@@ -950,6 +942,7 @@ export default function DashboardClient() {
               type="file"
               accept="image/*"
               capture="environment"
+              multiple={false}
               className={styles.hiddenInput}
               onChange={handleFileSelect}
             />
