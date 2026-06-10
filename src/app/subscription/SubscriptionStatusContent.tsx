@@ -149,7 +149,7 @@ export default function SubscriptionStatusContent({
 
           <div className={styles.planPanel}>
             <div className={styles.priceRow}>
-              <h3>{isSubscribed ? "Pro" : "$9.99"}</h3>
+              <h3>{isSubscribed ? "Pro" : "$0.99"}</h3>
               <span>{isSubscribed ? "active" : "/ month"}</span>
             </div>
 
