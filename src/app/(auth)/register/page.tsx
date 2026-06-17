@@ -106,6 +106,7 @@ const IconGoogle = () => (
   </svg>
 );
 
+/*
 const IconApple = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
     <path
@@ -118,6 +119,7 @@ const IconApple = () => (
     />
   </svg>
 );
+*/
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -345,10 +347,13 @@ export default function RegisterPage() {
                 <IconGoogle />
                 Continue with Google
               </button>
+              {/* Apple auth is hidden until the backend registration flow is implemented. */}
+              {/*
               <button className={styles.socialButton} type="button">
                 <IconApple />
                 Continue with Apple
               </button>
+              */}
             </div>
 
             <div className={styles.footer}>

@@ -67,6 +67,7 @@ const IconGoogle = () => (
   </svg>
 );
 
+/*
 const IconApple = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18">
     <path
@@ -79,6 +80,7 @@ const IconApple = () => (
     />
   </svg>
 );
+*/
 
 declare global {
   interface Window {
@@ -411,10 +413,13 @@ export default function LoginPage() {
                 <IconGoogle />
                 Continue with Google
               </button>
+              {/* Apple auth is hidden until the backend login flow is implemented. */}
+              {/*
               <button className={styles.socialButton} type="button">
                 <IconApple />
                 Continue with Apple
               </button>
+              */}
             </div>
 
             <div className={styles.footer}>
